@@ -1,7 +1,14 @@
 import './style.css';
 import { GameEngine } from './game/engine';
-import { THEMES, type Mode, type Difficulty, type GameStatus } from './game/types';
-import { AudioEngine } from './audio';
+import {
+  PIECE_SIZES,
+  PURE_MODES,
+  THEMES,
+  type Mode,
+  type Difficulty,
+  type GameStatus,
+} from './game/types';
+import { AudioEngine, soundtrackForSizes } from './audio';
 import { Universe } from './universe';
 import { BoardRenderer, drawPreview } from './renderer';
 import { createInterface, renderOverlay, setText } from './interface';
@@ -13,14 +20,14 @@ const element = <T extends Element = HTMLElement>(selector: string): T =>
   document.querySelector<T>(selector)!;
 let mode: Mode = 'pentris';
 let difficulty: Difficulty = 'flow';
-let game = new GameEngine(mode, difficulty);
 const settings = loadSettings();
+let game = new GameEngine(mode, difficulty, Math.random, settings.fusionSizes);
 const audio = new AudioEngine();
 const universe = new Universe(element<HTMLCanvasElement>('#universe'));
 const renderer = new BoardRenderer(element<HTMLCanvasElement>('#board'), element('#board-frame'));
 let previousStatus: GameStatus | undefined;
 let previousPreviews = '';
-let best = readBest(mode, difficulty);
+let best = readBest(game.recordKey, difficulty);
 let calloutUntil = 0;
 let toastTimer = 0;
 let starting = false;
@@ -52,13 +59,27 @@ function applySettings(): void {
   element<HTMLInputElement>('#reduced-motion').checked = settings.reducedMotion;
   element<HTMLInputElement>('#ghost').checked = settings.ghost;
   setText('#volume-value', `${Math.round(settings.volume * 100)}%`);
-  setText('#track-name', `${THEMES[settings.theme].name} · 92 BPM`);
+  updateTrack();
   setText('#theme-name', THEMES[settings.theme].name.toUpperCase());
   document.querySelectorAll<HTMLElement>('[data-theme]').forEach((button) => {
     const selected = Number(button.dataset.theme) === settings.theme;
     button.classList.toggle('selected', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
+}
+function updateTrack(): void {
+  const track = soundtrackForSizes(game.pieceSizes);
+  setText('#track-name', `${THEMES[settings.theme].name} · ${track.meter}`);
+  element('#track-name').setAttribute('title', `${track.title} · ${track.tempo}`);
+}
+function syncFusionOptions(): void {
+  element<HTMLElement>('#fusion-options').hidden = mode !== 'fusion';
+  document.querySelectorAll<HTMLInputElement>('[data-fusion-size]').forEach((checkbox) => {
+    checkbox.checked = settings.fusionSizes.includes(
+      Number(checkbox.dataset.fusionSize) as (typeof PIECE_SIZES)[number],
+    );
+  });
+  setText('#fusion-summary', `${settings.fusionSizes.join(' + ')} squares · balanced mix`);
 }
 function mute(): void {
   settings.muted = !settings.muted;
@@ -98,10 +119,16 @@ function pause(): void {
 }
 function menu(): void {
   input.clear();
-  game = new GameEngine(mode, difficulty);
+  game = new GameEngine(mode, difficulty, Math.random, settings.fusionSizes);
+  audio.setMode(mode);
+  audio.setPieceSizes(game.pieceSizes);
+  updateTrack();
   renderer.reset();
   previousPreviews = '';
-  best = readBest(mode, difficulty);
+  best = readBest(game.recordKey, difficulty);
+  document.documentElement.style.setProperty('--board-ratio', String(game.width / game.height));
+  setText('#board-size', `${game.width} × ${game.height} MATRIX`);
+  requestAnimationFrame(() => renderer.resize());
   syncStatus();
 }
 const input = new InputController({
@@ -142,7 +169,9 @@ function syncStatus(): void {
   );
   const inRun = game.status === 'playing' || game.status === 'paused';
   document
-    .querySelectorAll<HTMLButtonElement>('[data-mode], [data-difficulty]')
+    .querySelectorAll<HTMLButtonElement | HTMLInputElement>(
+      '[data-mode], [data-difficulty], [data-fusion-size]',
+    )
     .forEach((button) => {
       button.disabled = inRun;
     });
@@ -154,7 +183,7 @@ function syncStatus(): void {
   if (game.status === 'over' && savedScore !== game.score) {
     if (game.score > best) {
       best = game.score;
-      if (!saveBest(mode, difficulty, best))
+      if (!saveBest(game.recordKey, difficulty, best))
         toast('New personal best! This browser could not save it.');
       else toast('A new personal best. Beautifully played.');
     }
@@ -181,14 +210,32 @@ function changeMode(next: Mode): void {
     button.classList.toggle('selected', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
-  const number = mode === 'pentris' ? '01' : mode === 'sextris' ? '02' : '03';
+  const number = String(
+    mode === 'fusion' ? 7 : PURE_MODES.find((entry) => entry.mode === mode)!.size,
+  ).padStart(2, '0');
   setText('#board-title', `${number} / ${mode.toUpperCase()}`);
-  setText('.mode-heading span', `${number} / 03`);
+  setText('.mode-heading span', `${number} / 07`);
+  syncFusionOptions();
   menu();
-  document.documentElement.style.setProperty('--board-ratio', String(game.width / game.height));
-  setText('#board-size', `${game.width} × ${game.height} MATRIX`);
-  requestAnimationFrame(() => renderer.resize());
 }
+
+document.querySelectorAll<HTMLInputElement>('[data-fusion-size]').forEach((checkbox) => {
+  checkbox.addEventListener('change', () => {
+    if (game.status === 'playing' || game.status === 'paused') return;
+    const selected = PIECE_SIZES.filter(
+      (size) => element<HTMLInputElement>(`[data-fusion-size="${size}"]`).checked,
+    );
+    if (!selected.length) {
+      checkbox.checked = true;
+      toast('Keep at least one piece size in your mix.');
+      return;
+    }
+    settings.fusionSizes = [...selected];
+    syncFusionOptions();
+    persistSettings();
+    menu();
+  });
+});
 element('#overlay').addEventListener('click', (event) => {
   const button = (event.target as Element).closest<HTMLElement>('[data-overlay-action]');
   if (button?.dataset.overlayAction === 'start') void start();
@@ -274,6 +321,7 @@ window.addEventListener('pagehide', (event) => {
   renderer.dispose();
 });
 applySettings();
+syncFusionOptions();
 syncStatus();
 let previousTime = performance.now();
 function frame(now: number): void {

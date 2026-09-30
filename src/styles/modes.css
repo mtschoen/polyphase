@@ -1,0 +1,123 @@
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+.modes .mode {
+  padding: 10px 11px;
+  gap: 10px;
+  min-width: 0;
+}
+.modes .mode-number {
+  width: 22px;
+  flex-shrink: 0;
+  font-size: 23px;
+}
+.modes .mode strong {
+  font-size: 11px;
+}
+.modes .mode small {
+  font-size: 8px;
+}
+.fusion-mode {
+  grid-column: 1 / -1;
+}
+.fusion-options {
+  margin: 14px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.fusion-options[hidden] {
+  display: none;
+}
+.fusion-options legend {
+  font-size: 7px;
+  letter-spacing: 1.2px;
+  color: #a6c2b3;
+  margin-bottom: 10px;
+}
+.fusion-sizes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.fusion-sizes label {
+  position: relative;
+  cursor: pointer;
+}
+.fusion-sizes input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.fusion-sizes span {
+  display: grid;
+  place-items: center;
+  min-height: 33px;
+  border: 1px solid #6f9c7b40;
+  border-radius: 5px;
+  background: #0a1914;
+  color: #91a69b;
+  font-family: 'Space Grotesk Variable', sans-serif;
+  font-size: 14px;
+}
+.fusion-sizes input:checked + span {
+  background: #23483e;
+  border-color: var(--accent);
+  color: #dbfff0;
+  box-shadow: 0 0 14px #78e6c216;
+}
+.fusion-sizes input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.fusion-sizes input:disabled + span {
+  opacity: 0.55;
+}
+#fusion-summary {
+  font-size: 8px;
+  line-height: 1.5;
+  color: #95baa6;
+  margin: 9px 0 0;
+}
+.now-playing strong {
+  max-width: 350px;
+  line-height: 1.5;
+}
+@media (max-width: 900px) {
+  .modes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .modes .mode {
+    justify-content: center;
+    padding: 8px 6px;
+    gap: 6px;
+  }
+  .modes .mode-number {
+    width: auto;
+    font-size: 18px;
+  }
+  .modes .mode strong {
+    font-size: 10px;
+  }
+  .modes .mode small {
+    display: none;
+  }
+  .fusion-mode {
+    grid-column: 1 / -1;
+  }
+  .fusion-options {
+    margin-top: 10px;
+  }
+  .fusion-options legend {
+    margin-bottom: 6px;
+  }
+  .now-playing strong {
+    max-width: 210px;
+  }
+}

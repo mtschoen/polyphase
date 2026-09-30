@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { checkModeOptions } from './options-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -29,7 +30,11 @@ try {
     window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })),
   );
   assert.equal(await page.locator('#universe').getAttribute('data-universe-status'), 'ready');
-  for (const mode of ['pentris', 'sextris', 'fusion']) {
+  await checkModeOptions(page);
+  checks.push(
+    'All size options, custom 3+5+6 mix, nonempty selection, record configuration and persistence',
+  );
+  for (const mode of ['monotris', 'ditris', 'tritris', 'tetris', 'pentris', 'sextris', 'fusion']) {
     await page.locator(`[data-mode="${mode}"]`).click();
     await page.getByRole('button', { name: 'Enter the flow' }).click();
     await page.waitForFunction(() => document.querySelector('#overlay').hidden);
@@ -51,6 +56,12 @@ try {
     await page.getByRole('button', { name: 'One more journey' }).waitFor();
     const best = await page.locator('#best').textContent();
     assert.ok(Number(best.replaceAll(',', '')) > 0);
+    if (mode === 'fusion')
+      assert.ok(
+        await page.evaluate(
+          () => Number(localStorage.getItem('polyphase.best.fusion-3-5-6.flow')) > 0,
+        ),
+      );
     await page.getByRole('button', { name: 'Back to frequencies' }).click();
     checks.push(`${mode}: move, rotate, hold, drop, pause/resume, top-out, personal best, menu`);
   }

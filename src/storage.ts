@@ -1,9 +1,12 @@
+import { PIECE_SIZES, type PieceSize } from './game/types';
+
 export interface Settings {
   volume: number;
   muted: boolean;
   reducedMotion: boolean;
   ghost: boolean;
   theme: number;
+  fusionSizes: PieceSize[];
 }
 const defaults: Settings = {
   volume: 0.6,
@@ -11,12 +14,16 @@ const defaults: Settings = {
   reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   ghost: true,
   theme: 0,
+  fusionSizes: [5, 6],
 };
 export function loadSettings(): Settings {
   try {
     const value = JSON.parse(
       localStorage.getItem('polyphase.settings') || '{}',
     ) as Partial<Settings>;
+    const fusionSizes = PIECE_SIZES.filter(
+      (size) => Array.isArray(value.fusionSizes) && value.fusionSizes.includes(size),
+    );
     return {
       volume:
         typeof value.volume === 'number' && Number.isFinite(value.volume)
@@ -33,9 +40,10 @@ export function loadSettings(): Settings {
         value.theme < 3
           ? value.theme
           : 0,
+      fusionSizes: fusionSizes.length ? fusionSizes : [...defaults.fusionSizes],
     };
   } catch {
-    return { ...defaults };
+    return { ...defaults, fusionSizes: [...defaults.fusionSizes] };
   }
 }
 export function saveSettings(settings: Settings): boolean {

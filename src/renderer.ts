@@ -1,26 +1,7 @@
 import { COLORS, type GameEvent, type Piece } from './game/types';
 import type { GameEngine } from './game/engine';
 
-interface Particle {
-  x: number;
-  y: number;
-  velocityX: number;
-  velocityY: number;
-  life: number;
-  maximumLife: number;
-  size: number;
-  color: string;
-}
-interface Ring {
-  x: number;
-  y: number;
-  age: number;
-  strength: number;
-}
-interface Beam {
-  row: number;
-  age: number;
-}
+import { BoardEffects } from './effects';
 
 function drawBlock(
   context: CanvasRenderingContext2D,
@@ -89,18 +70,16 @@ export class BoardRenderer {
   reducedMotion = false;
   showGhost = true;
   private context: CanvasRenderingContext2D;
-  private particles: Particle[] = [];
-  private rings: Ring[] = [];
-  private beams: Beam[] = [];
-  private shake = 0;
+  private effects: BoardEffects;
   private observer: ResizeObserver;
   private width = 0;
   private height = 0;
   constructor(
     private canvas: HTMLCanvasElement,
-    private frame: HTMLElement,
+    frame: HTMLElement,
   ) {
     this.context = canvas.getContext('2d')!;
+    this.effects = new BoardEffects(canvas, frame);
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(canvas);
     this.resize();
@@ -114,44 +93,11 @@ export class BoardRenderer {
     this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
   }
   reset(): void {
-    this.particles = [];
-    this.rings = [];
-    this.beams = [];
-    this.shake = 0;
+    this.effects.reset();
   }
   handle(event: GameEvent, width: number): void {
     if (this.reducedMotion) return;
-    const impact =
-      event.type === 'drop' ? 1 : event.type === 'clear' ? 2 : event.type === 'resonance' ? 4 : 0;
-    if (impact) this.shake = Math.min(12, this.shake + impact * 2);
-    if (event.rows) for (const row of event.rows) this.beams.push({ row, age: 0 });
-    if (!event.cells || !['drop', 'clear', 'resonance', 'lock'].includes(event.type)) return;
-    const count = event.type === 'lock' ? 2 : impact * 5;
-    for (const cell of event.cells) {
-      for (let index = 0; index < count; index++) {
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = 1 + Math.random() * (impact * 4 + 2);
-        const life = 0.25 + Math.random() * 0.7;
-        this.particles.push({
-          x: cell.x + 0.5,
-          y: cell.y + 0.5,
-          velocityX: Math.cos(angle) * velocity,
-          velocityY: Math.sin(angle) * velocity - 1,
-          life,
-          maximumLife: life,
-          size: 0.03 + Math.random() * 0.08,
-          color: COLORS[cell.color % COLORS.length],
-        });
-      }
-    }
-    if (impact)
-      this.rings.push({
-        x: width / 2,
-        y: Math.max(...event.cells.map((cell) => cell.y), 0) + 0.5,
-        age: 0,
-        strength: impact,
-      });
-    if (this.particles.length > 700) this.particles.splice(0, this.particles.length - 700);
+    this.effects.handle(event, width);
   }
   render(game: GameEngine, delta: number, time: number): void {
     const context = this.context;
@@ -204,7 +150,7 @@ export class BoardRenderer {
         context.fillRect(0, 0, this.width, size * 7);
       }
     }
-    this.drawEffects(delta, size);
+    this.effects.render(delta, size, this.reducedMotion);
   }
   private drawDemo(width: number, height: number, size: number, time: number): void {
     const heights = [3, 4, 4, 2, 2, 3, 5, 4, 2, 3, 3, 2, 4, 3];
@@ -236,59 +182,8 @@ export class BoardRenderer {
         0.18,
       );
   }
-  private drawEffects(delta: number, size: number): void {
-    const context = this.context;
-    if (this.reducedMotion) this.reset();
-    this.shake *= Math.exp(-18 * delta);
-    this.frame.style.transform =
-      this.shake > 0.1
-        ? `translate3d(${(Math.random() - 0.5) * this.shake}px,${(Math.random() - 0.5) * this.shake}px,0)`
-        : '';
-    context.save();
-    context.globalCompositeOperation = 'lighter';
-    for (const beam of this.beams) {
-      beam.age += delta;
-      context.fillStyle = `rgba(203,255,226,${Math.max(0, 0.7 - beam.age * 2)})`;
-      context.fillRect(0, beam.row * size, this.width, size);
-    }
-    this.beams = this.beams.filter((beam) => beam.age < 0.35);
-    for (const ring of this.rings) {
-      ring.age += delta;
-      context.strokeStyle = `rgba(189,255,222,${Math.max(0, (0.7 - ring.age) * 0.6)})`;
-      context.lineWidth = 1;
-      context.beginPath();
-      context.ellipse(
-        ring.x * size,
-        ring.y * size,
-        ring.age * size * 18,
-        ring.age * size * 5,
-        0,
-        0,
-        Math.PI * 2,
-      );
-      context.stroke();
-    }
-    this.rings = this.rings.filter((ring) => ring.age < 0.7);
-    for (const particle of this.particles) {
-      particle.life -= delta;
-      particle.x += particle.velocityX * delta;
-      particle.y += particle.velocityY * delta;
-      particle.velocityY += delta * 10;
-      context.globalAlpha = Math.max(0, particle.life / particle.maximumLife);
-      context.fillStyle = particle.color;
-      context.shadowColor = particle.color;
-      context.shadowBlur = 6;
-      context.fillRect(
-        particle.x * size,
-        particle.y * size,
-        particle.size * size,
-        particle.size * size,
-      );
-    }
-    this.particles = this.particles.filter((particle) => particle.life > 0);
-    context.restore();
-  }
   dispose(): void {
     this.observer.disconnect();
+    this.effects.dispose();
   }
 }

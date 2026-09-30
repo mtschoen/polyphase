@@ -56,9 +56,9 @@ export const SOUNDTRACKS: Record<SoundtrackMode, { title: string; meter: string;
   };
 const THEME_TRANSPOSITIONS = [-7, -5, -12] as const;
 const PALETTES = [
-  { wave: 'triangle', cutoff: 3600, bassWave: 'sawtooth' },
-  { wave: 'sawtooth', cutoff: 2400, bassWave: 'triangle' },
-  { wave: 'sine', cutoff: 2100, bassWave: 'triangle' },
+  { wave: MELODY_WAVE, cutoff: 3600, bassWave: 'sawtooth' },
+  { wave: 'sawtooth', cutoff: 2400, bassWave: MELODY_WAVE },
+  { wave: 'sine', cutoff: 2100, bassWave: MELODY_WAVE },
 ] as const;
 const HARMONY = [
   [57, 60, 64, 69], // A minor
@@ -402,7 +402,7 @@ export function scheduleStep(
           0.021 + energy * 0.008,
           'music',
           {
-            wave: 'triangle',
+            wave: MELODY_WAVE,
             attack: 0.006,
             release: 0.06,
             pan: -0.2,
@@ -415,7 +415,7 @@ export function scheduleStep(
   if (stepInBar === 0) {
     chord.forEach((note, index) =>
       instruments.note(note, time, stepsPerBar * stepDuration * 0.94, 0.019, 'music', {
-        wave: 'triangle',
+        wave: MELODY_WAVE,
         attack: 0.06,
         release: 0.18,
         pan: PAD_PANNING[index],
@@ -470,7 +470,7 @@ export function scheduleStep(
       0.027 + energy * 0.009,
       'music',
       {
-        wave: 'triangle',
+        wave: MELODY_WAVE,
         attack: 0.004,
         release: 0.04,
         pan: -0.45,

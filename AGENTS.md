@@ -1,6 +1,6 @@
 # Polyphase
 
-An original browser falling-block game with five-cell and six-cell polyominoes.
+An original browser falling-block game with one-cell through six-cell polyominoes and custom Fusion mixes.
 
 ## Development
 
@@ -16,7 +16,7 @@ An original browser falling-block game with five-cell and six-cell polyominoes.
 - `src/game/`: deterministic rules, polyomino generation, and shared types.
 - `src/audio.ts`, `src/score.ts`: Web Audio synthesis, sound effects and original musical composition.
 - `src/universe.ts`: Three.js animated cosmic environment.
-- `src/renderer.ts`: board drawing and gameplay particles.
+- `src/renderer.ts`, `src/effects.ts`: board drawing and unclipped gameplay particles.
 - `src/main.ts`, `src/interface.ts`, `src/input.ts`, `src/storage.ts`: UI, controls, persistence and game loop.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
 
