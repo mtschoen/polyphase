@@ -73,6 +73,7 @@ export class GameEngine {
   private gravityElapsed = 0;
   private lockElapsed = 0;
   private lockResets = 0;
+  private clearDelay = 0;
 
   constructor(
     mode: Mode = 'pentris',
@@ -119,22 +120,29 @@ export class GameEngine {
     this.elapsed = 0;
     this.softDrop = false;
     this.holdUsed = false;
+    this.clearDelay = 0;
     this.status = 'playing';
     this.fillQueue();
     this.spawnNext();
   }
 
   update(deltaSeconds: number): void {
-    if (
-      this.status !== 'playing' ||
-      !this.active ||
-      !Number.isFinite(deltaSeconds) ||
-      deltaSeconds <= 0
-    )
-      return;
+    if (this.status !== 'playing' || !Number.isFinite(deltaSeconds) || deltaSeconds <= 0) return;
     let remaining = deltaSeconds;
-    // Step to gravity or lock deadlines so a long frame cannot skip landing time.
-    while (remaining > epsilon && this.status === 'playing' && this.active) {
+    // Step through entry, gravity and lock deadlines so long frames preserve each phase.
+    while (remaining > epsilon && this.status === 'playing') {
+      if (this.clearDelay > 0) {
+        const step = Math.min(remaining, this.clearDelay);
+        this.elapsed += step;
+        this.clearDelay -= step;
+        remaining -= step;
+        if (this.clearDelay <= epsilon) {
+          this.clearDelay = 0;
+          this.spawnNext();
+        }
+        continue;
+      }
+      if (!this.active) break;
       const grounded = !this.fits(this.active, this.active.x, this.active.y + 1);
       const interval = this.softDrop
         ? 0.035
@@ -166,7 +174,13 @@ export class GameEngine {
   }
 
   move(direction: number): boolean {
-    if (this.status !== 'playing' || !this.active || !Number.isFinite(direction) || direction === 0)
+    if (
+      this.status !== 'playing' ||
+      this.clearDelay > 0 ||
+      !this.active ||
+      !Number.isFinite(direction) ||
+      direction === 0
+    )
       return false;
     const nextX = this.active.x + Math.sign(direction);
     if (!this.fits(this.active, nextX, this.active.y)) return false;
@@ -177,7 +191,7 @@ export class GameEngine {
   }
 
   rotate(direction: 1 | -1 = 1): boolean {
-    if (this.status !== 'playing' || !this.active) return false;
+    if (this.status !== 'playing' || this.clearDelay > 0 || !this.active) return false;
     const cells = rotateCells(this.active.cells, direction);
     const previous = dimensions(this.active.cells);
     const next = dimensions(cells);
@@ -199,7 +213,7 @@ export class GameEngine {
   }
 
   hardDrop(): boolean {
-    if (this.status !== 'playing' || !this.active) return false;
+    if (this.status !== 'playing' || this.clearDelay > 0 || !this.active) return false;
     const distance = this.ghostY - this.active.y;
     this.active.y += distance;
     this.score += distance * 2;
@@ -209,7 +223,8 @@ export class GameEngine {
   }
 
   hold(): boolean {
-    if (this.status !== 'playing' || !this.active || this.holdUsed) return false;
+    if (this.status !== 'playing' || this.clearDelay > 0 || !this.active || this.holdUsed)
+      return false;
     const previous = this.held;
     const original = Object.values(polyominoesBySize)
       .flat()
@@ -225,6 +240,7 @@ export class GameEngine {
   activateResonance(): boolean {
     if (
       this.status !== 'playing' ||
+      this.clearDelay > 0 ||
       this.charge < 100 ||
       !this.board.some((row) => row.some((cell) => cell !== null))
     )
@@ -265,6 +281,11 @@ export class GameEngine {
     let y = this.active.y;
     while (this.fits(this.active, this.active.x, y + 1)) y += 1;
     return y;
+  }
+
+  /** Simulation seconds until the next piece enters after a line clear. */
+  get clearDelayRemaining(): number {
+    return this.clearDelay;
   }
 
   private emptyRow(): (number | null)[] {
@@ -389,12 +410,18 @@ export class GameEngine {
       this.combo = 0;
     }
     this.holdUsed = false;
-    this.spawnNext();
+    if (rows.length > 0) {
+      this.active = null;
+      this.clearDelay = 0.36 + (Math.min(6, rows.length) - 1) * 0.06;
+    } else {
+      this.spawnNext();
+    }
   }
 
   private gameOver(): void {
     this.status = 'over';
     this.active = null;
+    this.clearDelay = 0;
     this.softDrop = false;
     this.events.push({ type: 'gameover' });
   }

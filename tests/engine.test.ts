@@ -440,6 +440,7 @@ describe('clears and resonance', () => {
       game.board[21][0] = null;
       place(game, [[0, 0]], 0, 21);
       game.hardDrop();
+      game.update(game.clearDelayRemaining);
     }
     game.lines = 8;
     clearOne();
