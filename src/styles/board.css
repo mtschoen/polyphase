@@ -39,6 +39,9 @@
 #pause svg {
   height: 13px;
 }
+#pause-label {
+  display: none;
+}
 .board-frame {
   position: relative;
   padding: 8px;

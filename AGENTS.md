@@ -7,10 +7,12 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - Node.js 22.12 or newer. `npm install`, then `npm run dev`.
 - `npm run dev:lan` or `PLAY-ON-PHONE.bat`: serve on the local network for phone play.
 - `npm run build`: TypeScript validation and production bundle.
+- `npm run build:pages`: production bundle with the `/polyphase/` GitHub Pages prefix. Preview with `npm run preview -- --base=/polyphase/`.
 - `npm test`: deterministic rules tests. `npm run coverage`: full source coverage report.
 - `npm run lint`, `npm run format:check`: code checks.
 - `npm run preview`: serve the production build.
 - `node tests/browser-smoke.mjs`, `node tests/media-smoke.mjs` and `node tests/mobile-smoke.mjs`: real browser checks against a running dev server. See SMOKE.md for browser setup and TEST-REPORT.md for the latest evidence.
+- `node tests/release-smoke.mjs`: production-bundle checks against the Pages preview, or `POLYPHASE_URL` for the live site. `.github/workflows/pages.yml` verifies and publishes pushes to `main`.
 
 ## Architecture
 
@@ -24,6 +26,8 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `src/leaderboard.ts`, `src/leaderboard-panel.ts`: validated local rankings, stale-tab merging and the trophy dialog. Save completed runs before replacing game state.
 - `src/impact-settings.ts`, `src/juice-lab.ts`: normalized impact controls and the hidden Konami preview panel. Stored multipliers stay absolute; percentages are relative to the tuned defaults.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
+
+The footer and keyboard strip are mounted outside `#app`; this keeps the fixed mobile music bar independent of the game's shake transform. Keep mobile root overflow clipped so shake cannot widen the layout viewport.
 
 Inject random sources and advance simulation time explicitly in tests. No wall-clock assertions.
 Keep game logic independent of DOM, audio, and graphics. Never use em dashes.

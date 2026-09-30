@@ -10,8 +10,11 @@ An existing compatible Chromium executable can be selected with the `POLYPHASE_B
 - `npm run coverage`: deterministic rules tests and honest full-source unit coverage.
 - `npm run lint` and `npm run format:check`: static and formatting checks.
 - `node tests/mobile-smoke.mjs`: native Chromium touch emulation at 320x568, 390x844 and 844x390; visible board, no horizontal overflow, 44-pixel minimum control targets, movement/rotation/hold/drop, pause/resume, leaderboard fit and simultaneous pointer handling. Set `POLYPHASE_URL` to the LAN URL printed by `npm run dev:lan` to exercise the phone-serving path. The touch fixture is served normally to preserve Chromium's private-network address-space classification.
+- `node tests/release-smoke.mjs`: checks the built game without source imports. First run `npm run build:pages` and `npm run preview -- --base=/polyphase/`, or set `POLYPHASE_URL=https://mtschoen.github.io/polyphase/` for the deployed site. Desktop and phone probes verify assets/favicon, WebGL startup, gameplay, mood switching, pause, saved rankings and the desktop Konami code.
 
 The browser harnesses close their isolated browsers. Screenshots and runtime results are written under ignored `artifacts/`. Inspect desktop and mobile screenshots after layout changes. Perceived musical quality and game feel still benefit from human playtesting with headphones.
+
+Mobile release checks also assert visible Pause/Resume labels, 44-pixel atmosphere targets, mood changes without pausing, no controls obscured by the music bar, and stable dock geometry while the game surface shakes. Inspect `mobile-play-*.png` and `release-*.png` after changes to this layout. Hardware-backed Chrome is the verified production browser; a software-only legacy Chromium headless shell may lose its WebGL context while initializing the production bundle.
 
 The media harness also measures final output after compression at 100% master volume. Paired offline renders compare unity output against the production boost for all six sizes and three themes, overlapping opening music with a six-line clear. They verify the 1.5x signal increase and peak headroom without evicting scheduled voices.
 

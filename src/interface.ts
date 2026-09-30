@@ -46,7 +46,7 @@ export function createInterface(): void {
         <div class="journey-note"><span>✳</span><p>Build a little harmony.<br>Clear lines. Light up the universe.</p></div>
       </aside>
       <section class="game-section" aria-label="Game board">
-        <div class="board-heading"><span id="board-title">05 <b>/</b> PENTRIS</span><span id="game-state"><i></i> STANDBY</span><button id="pause" class="icon-button" aria-label="Pause game" title="Pause (P)">${icon('pause')}</button></div>
+        <div class="board-heading"><span id="board-title">05 <b>/</b> PENTRIS</span><span id="game-state"><i></i> STANDBY</span><button id="pause" class="icon-button" aria-label="Pause game" title="Pause (P)">${icon('pause')}<span id="pause-label">Pause</span></button></div>
         <div class="board-frame" id="board-frame"><div class="board-corner top-left"></div><div class="board-corner top-right"></div><canvas id="board" aria-label="Falling polyomino game board"></canvas><div id="overlay" class="board-overlay"></div><div class="board-corner bottom-left"></div><div class="board-corner bottom-right"></div><div id="callout" aria-live="polite"></div></div>
         <div class="board-foot"><span><i class="live-dot"></i> <span id="board-size">12 × 22 MATRIX</span></span><button id="effects-mode" aria-label="Use reduced effects" title="Toggle full or reduced effects">FULL FX</button><span id="run-time">00:00</span></div>
         <div class="touch-controls" aria-label="Touch controls"><button data-action="hold" aria-label="Hold piece">HOLD</button><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate clockwise">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="down" aria-label="Soft drop">↓</button><button data-action="drop" aria-label="Hard drop">DROP</button></div>
@@ -64,6 +64,9 @@ export function createInterface(): void {
     ${settingsDialog()}
     <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">A FAMILIAR RHYTHM, REMIXED</span><button data-close class="close-button" aria-label="Close help">×</button></div><h2>A few more squares.<br>A lot more possibility.</h2><p>Fit the falling shapes together. Fill a complete horizontal line to clear it. Keep the stack below the top.</p><div class="help-grid"><span>Move</span><kbd>← → / A D</kbd><span>Rotate clockwise</span><kbd>↑ / X / E</kbd><span>Rotate counterclockwise</span><kbd>Z / Q</kbd><span>Soft / hard drop</span><kbd>↓ / SPACE</kbd><span>Hold a piece</span><kbd>C / SHIFT</kbd><span>Resonance</span><kbd>ENTER</kbd><span>Pause</span><kbd>P / ESC</kbd><span>Mute / fullscreen</span><kbd>M / F</kbd></div><p><strong>Make some space.</strong> Each placement and cleared line charges Resonance. At 100%, press Enter to sweep away the bottom four rows.</p><p class="dialog-bottom">Choose any pure size from one to six. Fusion lets you mix your own sizes with equal chances for each. Mirrored shapes are included, including all seven classic four-square pieces.</p></dialog>
     <div id="toast" role="status"></div>`;
+  // Keep the mobile dock anchored to the viewport while the game surface shakes.
+  document.body.append(document.querySelector('.site-footer')!);
+  document.body.append(document.querySelector('.keyboard-strip')!);
 }
 
 function settingsDialog(): string {

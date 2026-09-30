@@ -93,9 +93,12 @@ try {
     await page.getByRole('button', { name: 'Keep flowing' }).waitFor();
     await page.screenshot({ path: `artifacts/polyphase-${mode}.png`, fullPage: true });
     await page.getByRole('button', { name: 'Keep flowing' }).click();
+    await page.locator('#board').click();
     for (let index = 0; index < 55; index++) {
       if (await page.getByRole('button', { name: 'One more journey' }).isVisible()) break;
       await page.keyboard.press('Space');
+      // Observe the game-over frame before another Space can start a fresh run.
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     }
     await page.getByRole('button', { name: 'One more journey' }).waitFor();
     const completedScore = Number(await page.locator('#score').textContent());

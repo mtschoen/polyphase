@@ -34,12 +34,15 @@ try {
       documentWidth: document.documentElement.scrollWidth,
       scroll: scrollY,
       board: document.querySelector('#board').getBoundingClientRect().toJSON(),
+      dock: document.querySelector('.site-footer').getBoundingClientRect().toJSON(),
       controls: [
-        ...document.querySelectorAll('[data-action], #resonance, #pause, .header-actions button'),
+        ...document.querySelectorAll(
+          '[data-action], #resonance, #pause, .header-actions button, [data-theme]',
+        ),
       ]
         .filter((element) => element.getBoundingClientRect().width > 0)
         .map((element) => ({
-          action: element.dataset.action || element.id,
+          action: element.dataset.action || element.id || `theme-${element.dataset.theme}`,
           ...element.getBoundingClientRect().toJSON(),
         })),
     }));
@@ -47,6 +50,8 @@ try {
     assert.ok(geometry.documentWidth <= width);
     assert.equal(geometry.scroll, 0);
     assert.ok(geometry.board.top >= 0 && geometry.board.bottom <= height);
+    assert.ok(geometry.dock.height >= 56 && geometry.dock.bottom <= height);
+    assert.ok(geometry.board.bottom <= geometry.dock.top);
     for (const control of geometry.controls) {
       assert.ok(
         control.width >= 44 && control.height >= 44,
@@ -56,7 +61,37 @@ try {
         control.left >= 0 && control.right <= width && control.top >= 0 && control.bottom <= height,
         `${mode} ${control.action} must fit the visible phone screen`,
       );
+      if (!control.action.startsWith('theme-'))
+        assert.ok(control.bottom <= geometry.dock.top, `${control.action} overlaps the music dock`);
     }
+    assert.equal(await page.locator('#pause-label').innerText(), 'Pause');
+    for (const [theme, label] of [
+      ['Afterglow', 'AFTERGLOW'],
+      ['Deep Blue', 'DEEP BLUE'],
+      ['Eventide', 'EVENTIDE'],
+    ]) {
+      const button = page.getByRole('button', { name: `${theme} atmosphere`, exact: true });
+      await button.tap();
+      assert.equal(await button.getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('#theme-name').textContent(), label);
+      assert.match(await page.locator('#track-name').textContent(), new RegExp(theme));
+      assert.equal(
+        await page.locator('#overlay').isVisible(),
+        false,
+        'Changing mood keeps the game running',
+      );
+    }
+    const dockDuringShake = await page.evaluate(() => {
+      document.querySelector('#app').style.transform = 'translate3d(8px, 11px, 0)';
+      const bounds = document.querySelector('.site-footer').getBoundingClientRect().toJSON();
+      document.querySelector('#app').style.transform = '';
+      return bounds;
+    });
+    assert.equal(
+      dockDuringShake.top,
+      geometry.dock.top,
+      'The music dock stays anchored during screen shake',
+    );
     for (const action of ['left', 'rotate', 'right', 'hold', 'down', 'drop'])
       await page.locator(`[data-action="${action}"]`).tap();
     await page.waitForFunction(() => Number(document.querySelector('#score').textContent) > 0);
@@ -64,6 +99,7 @@ try {
     await page.screenshot({ path: `artifacts/mobile-play-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
     await page.getByRole('button', { name: 'Keep flowing' }).waitFor();
+    assert.equal(await page.locator('#pause-label').innerText(), 'Resume');
     await page.getByRole('button', { name: 'Keep flowing' }).tap();
     await page.getByRole('button', { name: 'Leaderboard', exact: true }).tap();
     await page.getByLabel('Player name', { exact: true }).fill('PHONE PLAYER');

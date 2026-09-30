@@ -4,9 +4,13 @@
 
 An original falling-block arcade with every piece size from one to six squares, custom Fusion mixes, and a folk soundtrack that changes meter with your pieces.
 
-Double-click **PLAY.bat**, then choose your frequency. With the local server running, open [Polyphase](http://127.0.0.1:5173). Use headphones for the original adaptive soundtrack.
+**[Play Polyphase](https://mtschoen.github.io/polyphase/)** on desktop or phone. No installation or account required. Use headphones for the original adaptive soundtrack.
+
+To run locally, double-click **PLAY.bat**, then open [the local game](http://127.0.0.1:5173).
 
 For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. During play, the board and large touch controls fit portrait or landscape; you can hold a direction while using another finger to rotate or drop. Audio starts with your first play gesture.
+
+During phone play, the bright **Pause / Resume** button stays above the board. The bottom music bar shows the current track and keeps all three atmosphere buttons within reach, so you can change the music and mood without pausing. It stays anchored during screen shake.
 
 ## Choose your pieces
 
@@ -92,5 +96,7 @@ A pitched kick body, deep sub sweep and short click drive every quarter beat. Op
 Music and synthesized effects receive a 50% output boost after compression, including when your saved master volume is already at 100%. The master slider and mute still control the full mix.
 
 Development and verification commands are in [AGENTS.md](AGENTS.md). Test evidence and remaining verification limits are in [TEST-REPORT.md](TEST-REPORT.md).
+
+Source lives at [mtschoen/polyphase](https://github.com/mtschoen/polyphase). Pushes to `main` run lint, formatting, unit coverage and the production build before GitHub Actions deploys to Pages. `npm run build:pages` sets the `/polyphase/` asset prefix; `npm run preview -- --base=/polyphase/` previews that build locally.
 
 Original artwork, synthesis, musical arrangement and game implementation. The melody is traditional; no game recording or modern game arrangement is reused. MIT license for this project. Three.js and bundled fonts retain their own licenses.

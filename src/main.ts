@@ -254,6 +254,7 @@ function syncStatus(): void {
     'aria-label',
     game.status === 'paused' ? 'Resume game' : 'Pause game',
   );
+  setText('#pause-label', game.status === 'paused' ? 'Resume' : 'Pause');
   saveCompletedRun();
 }
 function saveCompletedRun(): void {
