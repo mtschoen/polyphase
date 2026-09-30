@@ -100,3 +100,7 @@ Development and verification commands are in [AGENTS.md](AGENTS.md). Test eviden
 Source lives at [mtschoen/polyphase](https://github.com/mtschoen/polyphase). Pushes to `main` run lint, formatting, unit coverage and the production build before GitHub Actions deploys to Pages. `npm run build:pages` sets the `/polyphase/` asset prefix; `npm run preview -- --base=/polyphase/` previews that build locally.
 
 Original artwork, synthesis, musical arrangement and game implementation. The melody is traditional; no game recording or modern game arrangement is reused. MIT license for this project. Three.js and bundled fonts retain their own licenses.
+
+## How it was made
+
+The first playable version came largely from a one-shot prompt, then evolved through roughly four hours of playtesting and refinement in a single Codex session using GPT-6-astra in fast mode. Human feedback drove the music, particles, screen shake, game modes and mobile controls, with subagents working in parallel. By the release wrap, the main-thread log recorded six context compactions, nine subagent launches and cumulative usage of about 69.6 million input tokens (67.6 million cached) and 321,000 output tokens, including reasoning. These token totals include repeated context and exclude the subagents' own usage.
