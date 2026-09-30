@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GameEngine } from '../src/game/engine';
 import { hexominoes, pentominoes } from '../src/game/shapes';
-import type { Cell, Mode } from '../src/game/types';
+import { PURE_MODES } from '../src/game/types';
+import type { Cell, Mode, PieceSize } from '../src/game/types';
 
 function fresh(mode: Mode = 'pentris', difficulty: 'flow' | 'rush' = 'flow'): GameEngine {
   const game = new GameEngine(mode, difficulty, () => 0.37);
@@ -47,8 +48,12 @@ function sequence(game: GameEngine, count: number): { id: string; size: number }
 
 describe('fair piece sequence', () => {
   it.each([
-    ['pentris', 12, 12, 5],
-    ['sextris', 35, 14, 6],
+    ['monotris', 1, 8, 1],
+    ['ditris', 1, 8, 2],
+    ['tritris', 2, 10, 3],
+    ['tetris', 7, 10, 4],
+    ['pentris', 18, 12, 5],
+    ['sextris', 60, 14, 6],
   ] as const)('%s deals each shape once per bag', (mode, bagSize, width, size) => {
     const game = fresh(mode);
     const pieces = sequence(game, bagSize * 2);
@@ -58,10 +63,16 @@ describe('fair piece sequence', () => {
     expect(new Set(pieces.slice(0, bagSize).map((piece) => piece.id)).size).toBe(bagSize);
     expect(new Set(pieces.slice(bagSize).map((piece) => piece.id)).size).toBe(bagSize);
     expect(game.queue).toHaveLength(5);
+    expect(game.pieceSizes).toEqual([size]);
+    expect(game.recordKey).toBe(mode);
+    expect(PURE_MODES.find((entry) => entry.mode === mode)?.size).toBe(size);
   });
 
   it('balances Fusion sizes while preserving independent complete shape bags', () => {
-    const pieces = sequence(fresh('fusion'), 70);
+    const game = fresh('fusion');
+    const pieces = sequence(game, 120);
+    expect(game.pieceSizes).toEqual([5, 6]);
+    expect(game.recordKey).toBe('fusion');
     for (let index = 0; index < pieces.length; index += 2) {
       expect(
         pieces
@@ -74,13 +85,93 @@ describe('fair piece sequence', () => {
       new Set(
         pieces
           .filter((piece) => piece.size === 5)
-          .slice(0, 12)
+          .slice(0, 18)
           .map((piece) => piece.id),
       ).size,
-    ).toBe(12);
+    ).toBe(18);
     expect(new Set(pieces.filter((piece) => piece.size === 6).map((piece) => piece.id)).size).toBe(
-      35,
+      60,
     );
+  });
+
+  it('balances custom Fusion size cycles and keeps independent complete shape bags', () => {
+    const game = new GameEngine('fusion', 'flow', () => 0.37, [3, 5, 6]);
+    game.start();
+    const pieces = sequence(game, 180);
+    expect(game.width).toBe(14);
+    expect(game.recordKey).toBe('fusion-3-5-6');
+    for (let index = 0; index < pieces.length; index += 3) {
+      expect(
+        pieces
+          .slice(index, index + 3)
+          .map((piece) => piece.size)
+          .sort(),
+      ).toEqual([3, 5, 6]);
+    }
+    for (const [size, count] of [
+      [3, 2],
+      [5, 18],
+      [6, 60],
+    ]) {
+      const selected = pieces.filter((piece) => piece.size === size);
+      for (let index = 0; index + count <= selected.length; index += count) {
+        expect(new Set(selected.slice(index, index + count).map((piece) => piece.id)).size).toBe(
+          count,
+        );
+      }
+    }
+  });
+
+  it.each([
+    [[1], 8, 'fusion-1'],
+    [[2, 4], 10, 'fusion-2-4'],
+    [[5], 12, 'fusion-5'],
+    [[6], 14, 'fusion-6'],
+  ] as const)(
+    'supports Fusion selection %s through hold and restart',
+    (sizes, width, recordKey) => {
+      const game = new GameEngine('fusion', 'flow', () => 0.37, sizes);
+      game.start();
+      expect(game.width).toBe(width);
+      expect(game.recordKey).toBe(recordKey);
+      game.hold();
+      expect(sizes).toContain(game.held!.cells.length);
+      expect(
+        sequence(game, 12).every((piece) => (sizes as readonly number[]).includes(piece.size)),
+      ).toBe(true);
+      game.start();
+      expect(game.held).toBeNull();
+      expect(game.pieceSizes).toEqual(sizes);
+      expect(
+        sequence(game, 12).every((piece) => (sizes as readonly number[]).includes(piece.size)),
+      ).toBe(true);
+    },
+  );
+
+  it('normalizes and defensively copies Fusion sizes while preserving the legacy record key', () => {
+    const sizes: PieceSize[] = [6, 5, 6];
+    const game = new GameEngine('fusion', 'flow', () => 0.37, sizes);
+    sizes.splice(0, sizes.length, 1);
+    expect(game.pieceSizes).toEqual([5, 6]);
+    expect(game.recordKey).toBe('fusion');
+    game.start();
+    expect(sequence(game, 12).every((piece) => [5, 6].includes(piece.size))).toBe(true);
+  });
+
+  it.each([[], [0], [7], [2.5], [Number.NaN], [3, 8]].map((sizes) => [sizes]))(
+    'rejects invalid Fusion sizes %s',
+    (sizes) => {
+      expect(() => new GameEngine('fusion', 'flow', () => 0.37, sizes as PieceSize[])).toThrow(
+        RangeError,
+      );
+    },
+  );
+
+  it('uses the pure mode size regardless of an unused Fusion selection', () => {
+    const game = new GameEngine('tetris', 'flow', () => 0.37, []);
+    game.start();
+    expect(game.pieceSizes).toEqual([4]);
+    expect(sequence(game, 14).every((piece) => piece.size === 4)).toBe(true);
   });
 
   it('does not mutate library cells when an active piece rotates', () => {
@@ -164,20 +255,23 @@ describe('piece actions', () => {
     expect(game.drainEvents()).toMatchObject([{ type: 'drop', distance: 16 }, { type: 'lock' }]);
   });
 
-  it('permits one hold per piece and resets held orientation when swapped back', () => {
-    const game = fresh();
-    const original = structuredClone(game.active!);
-    game.rotate();
-    expect(game.hold()).toBe(true);
-    expect(game.held!.id).toBe(original.id);
-    expect(game.held!.cells).toEqual(original.cells);
-    expect(game.hold()).toBe(false);
-    game.hardDrop();
-    expect(game.hold()).toBe(true);
-    expect(game.active!.id).toBe(original.id);
-    expect(game.active!.cells).toEqual(original.cells);
-    expect(game.active!.y).toBe(0);
-  });
+  it.each(PURE_MODES)(
+    '$name permits one hold per piece and restores held orientation',
+    ({ mode }) => {
+      const game = fresh(mode);
+      const original = structuredClone(game.active!);
+      game.rotate();
+      expect(game.hold()).toBe(true);
+      expect(game.held!.id).toBe(original.id);
+      expect(game.held!.cells).toEqual(original.cells);
+      expect(game.hold()).toBe(false);
+      game.hardDrop();
+      expect(game.hold()).toBe(true);
+      expect(game.active!.id).toBe(original.id);
+      expect(game.active!.cells).toEqual(original.cells);
+      expect(game.active!.y).toBe(0);
+    },
+  );
 
   it('ends the game when a queued or held piece cannot spawn', () => {
     for (const action of ['drop', 'hold'] as const) {

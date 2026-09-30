@@ -1,5 +1,5 @@
 import { COLORS } from './types';
-import type { Cell, Piece } from './types';
+import type { Cell, Piece, PieceSize } from './types';
 
 export function normalizeCells(cells: Cell[]): Cell[] {
   if (cells.length === 0) return [];
@@ -60,23 +60,52 @@ export function generatePolyominoes(cellCount: number): Cell[][] {
   return shapes.sort((first, second) => cellKey(first).localeCompare(cellKey(second)));
 }
 
-function createLibrary(size: number, prefix: string): Piece[] {
-  return generatePolyominoes(size).map((cells, index) => {
-    let orientation = cells;
-    let widest = cells;
-    for (let turn = 0; turn < 4; turn += 1) {
-      if (Math.max(...orientation.map(([x]) => x)) > Math.max(...widest.map(([x]) => x))) {
-        widest = orientation;
-      }
-      orientation = rotateCells(orientation);
+function createPiece(cells: Cell[], id: string, color: number): Piece {
+  let orientation = cells;
+  let widest = cells;
+  for (let turn = 0; turn < 4; turn += 1) {
+    if (Math.max(...orientation.map(([x]) => x)) > Math.max(...widest.map(([x]) => x))) {
+      widest = orientation;
     }
-    return {
-      id: prefix + '-' + String(index + 1).padStart(2, '0'),
-      cells: normalizeCells(widest),
-      color: index % COLORS.length,
-    };
-  });
+    orientation = rotateCells(orientation);
+  }
+  return { id, cells: normalizeCells(widest), color };
 }
 
-export const pentominoes: readonly Piece[] = createLibrary(5, 'pentris');
-export const hexominoes: readonly Piece[] = createLibrary(6, 'sextris');
+function rotationKey(cells: Cell[]): string {
+  const variants: string[] = [];
+  let orientation = normalizeCells(cells);
+  for (let turn = 0; turn < 4; turn += 1) {
+    variants.push(cellKey(orientation));
+    orientation = rotateCells(orientation);
+  }
+  return variants.sort()[0];
+}
+
+function createLibrary(size: PieceSize, prefix: string): Piece[] {
+  const pieces = generatePolyominoes(size).map((cells, index) => {
+    return createPiece(
+      cells,
+      prefix + '-' + String(index + 1).padStart(2, '0'),
+      index % COLORS.length,
+    );
+  });
+  // Rotation controls cannot reach a chiral piece's reflection, so include it in the bag.
+  const mirrors = pieces.flatMap((piece) => {
+    const reflected = piece.cells.map(([x, y]): Cell => [-x, y]);
+    if (rotationKey(reflected) === rotationKey(piece.cells)) return [];
+    return [createPiece(reflected, piece.id + '-mirror', piece.color)];
+  });
+  return [...pieces, ...mirrors];
+}
+
+export const polyominoesBySize: Readonly<Record<PieceSize, readonly Piece[]>> = {
+  1: createLibrary(1, 'monotris'),
+  2: createLibrary(2, 'ditris'),
+  3: createLibrary(3, 'tritris'),
+  4: createLibrary(4, 'tetris'),
+  5: createLibrary(5, 'pentris'),
+  6: createLibrary(6, 'sextris'),
+};
+export const pentominoes = polyominoesBySize[5];
+export const hexominoes = polyominoesBySize[6];

@@ -1,4 +1,19 @@
-export type Mode = 'pentris' | 'sextris' | 'fusion';
+export type Mode = 'monotris' | 'ditris' | 'tritris' | 'tetris' | 'pentris' | 'sextris' | 'fusion';
+export type PieceSize = 1 | 2 | 3 | 4 | 5 | 6;
+export const PIECE_SIZES: readonly PieceSize[] = [1, 2, 3, 4, 5, 6];
+export const PURE_MODES: readonly {
+  mode: Exclude<Mode, 'fusion'>;
+  size: PieceSize;
+  name: string;
+  shapeCount: number;
+}[] = [
+  { mode: 'monotris', size: 1, name: 'Monotris', shapeCount: 1 },
+  { mode: 'ditris', size: 2, name: 'Ditris', shapeCount: 1 },
+  { mode: 'tritris', size: 3, name: 'Tritris', shapeCount: 2 },
+  { mode: 'tetris', size: 4, name: 'Tetris', shapeCount: 7 },
+  { mode: 'pentris', size: 5, name: 'Pentris', shapeCount: 18 },
+  { mode: 'sextris', size: 6, name: 'Sextris', shapeCount: 60 },
+];
 export type Difficulty = 'flow' | 'rush';
 export type Cell = [number, number];
 export interface Piece {

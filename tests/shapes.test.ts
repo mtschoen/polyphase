@@ -4,8 +4,10 @@ import {
   hexominoes,
   normalizeCells,
   pentominoes,
+  polyominoesBySize,
   rotateCells,
 } from '../src/game/shapes';
+import { PURE_MODES } from '../src/game/types';
 import type { Cell } from '../src/game/types';
 
 function signature(cells: Cell[]): string {
@@ -22,6 +24,16 @@ function freeSignature(cells: Cell[]): string {
       signatures.push(signature(orientation));
       orientation = rotateCells(orientation, 1);
     }
+  }
+  return signatures.sort()[0];
+}
+
+function rotationSignature(cells: Cell[]): string {
+  const signatures: string[] = [];
+  let orientation = cells;
+  for (let turn = 0; turn < 4; turn += 1) {
+    signatures.push(signature(orientation));
+    orientation = rotateCells(orientation);
   }
   return signatures.sort()[0];
 }
@@ -62,13 +74,51 @@ describe('free polyomino library', () => {
   });
 
   it('preserves shapes through four rotations and inverse turns', () => {
-    for (const piece of [...pentominoes, ...hexominoes]) {
+    const pieces = Object.values(polyominoesBySize).flat();
+    for (const piece of pieces) {
       let orientation = piece.cells;
       for (let turn = 0; turn < 4; turn += 1) orientation = rotateCells(orientation, 1);
       expect(orientation).toEqual(normalizeCells(piece.cells));
       expect(rotateCells(rotateCells(piece.cells, 1), -1)).toEqual(normalizeCells(piece.cells));
     }
-    expect(new Set([...pentominoes, ...hexominoes].map((piece) => piece.id)).size).toBe(47);
+    expect(new Set(pieces.map((piece) => piece.id)).size).toBe(89);
+  });
+
+  it.each([
+    [1, 1],
+    [2, 1],
+    [3, 2],
+    [4, 7],
+    [5, 18],
+    [6, 60],
+  ] as const)('provides every rotation-distinct playable %i-cell shape', (size, count) => {
+    const pieces = polyominoesBySize[size];
+    expect(pieces).toHaveLength(count);
+    expect(new Set(pieces.map((piece) => rotationSignature(piece.cells))).size).toBe(count);
+    const freeShapes = generatePolyominoes(size);
+    for (const cells of freeShapes) {
+      for (const reflected of [cells, cells.map(([x, y]): Cell => [-x, y])]) {
+        expect(
+          pieces.some((piece) => rotationSignature(piece.cells) === rotationSignature(reflected)),
+        ).toBe(true);
+      }
+    }
+    expect(PURE_MODES.find((mode) => mode.size === size)?.shapeCount).toBe(count);
+  });
+
+  it('retains original pentomino and hexomino identifiers alongside new mirror variants', () => {
+    for (const [library, prefix, originalCount] of [
+      [pentominoes, 'pentris', 12],
+      [hexominoes, 'sextris', 35],
+    ] as const) {
+      const basePieces = library.filter((piece) => !piece.id.endsWith('-mirror'));
+      expect(basePieces.map((piece) => piece.id)).toEqual(
+        Array.from(
+          { length: originalCount },
+          (_, index) => `${prefix}-${String(index + 1).padStart(2, '0')}`,
+        ),
+      );
+    }
   });
 
   it('normalizes translated cells without changing the input', () => {

@@ -1,4 +1,5 @@
-import { hexominoes, normalizeCells, pentominoes, rotateCells } from './shapes';
+import { normalizeCells, polyominoesBySize, rotateCells } from './shapes';
+import { PIECE_SIZES, PURE_MODES } from './types';
 import type {
   ActivePiece,
   Cell,
@@ -8,6 +9,7 @@ import type {
   GameStatus,
   Mode,
   Piece,
+  PieceSize,
 } from './types';
 
 const lockDelay = 0.5;
@@ -49,6 +51,8 @@ export class GameEngine {
   readonly height = 22;
   readonly mode: Mode;
   readonly difficulty: Difficulty;
+  readonly pieceSizes: readonly PieceSize[];
+  readonly recordKey: string;
   board: (number | null)[][];
   active: ActivePiece | null = null;
   held: Piece | null = null;
@@ -62,9 +66,8 @@ export class GameEngine {
   elapsed = 0;
   softDrop = false;
   private readonly random: () => number;
-  private pentominoBag: Piece[] = [];
-  private hexominoBag: Piece[] = [];
-  private sizeBag: number[] = [];
+  private shapeBags = new Map<PieceSize, Piece[]>();
+  private sizeBag: PieceSize[] = [];
   private events: GameEvent[] = [];
   private holdUsed = false;
   private gravityElapsed = 0;
@@ -75,11 +78,27 @@ export class GameEngine {
     mode: Mode = 'pentris',
     difficulty: Difficulty = 'flow',
     random: () => number = Math.random,
+    fusionSizes: readonly PieceSize[] = [5, 6],
   ) {
     this.mode = mode;
     this.difficulty = difficulty;
     this.random = random;
-    this.width = mode === 'pentris' ? 12 : 14;
+    if (mode === 'fusion') {
+      if (fusionSizes.length === 0 || fusionSizes.some((size) => !PIECE_SIZES.includes(size))) {
+        throw new RangeError('Fusion requires at least one piece size from one to six.');
+      }
+      this.pieceSizes = Object.freeze(
+        [...new Set(fusionSizes)].sort((first, second) => first - second),
+      );
+    } else {
+      this.pieceSizes = Object.freeze([PURE_MODES.find((entry) => entry.mode === mode)!.size]);
+    }
+    this.recordKey =
+      mode === 'fusion' && this.pieceSizes.join('-') !== '5-6'
+        ? 'fusion-' + this.pieceSizes.join('-')
+        : mode;
+    const largestSize = this.pieceSizes[this.pieceSizes.length - 1];
+    this.width = largestSize <= 2 ? 8 : largestSize <= 4 ? 10 : largestSize === 5 ? 12 : 14;
     this.board = this.emptyBoard();
     this.fillQueue();
   }
@@ -89,8 +108,7 @@ export class GameEngine {
     this.active = null;
     this.held = null;
     this.queue = [];
-    this.pentominoBag = [];
-    this.hexominoBag = [];
+    this.shapeBags.clear();
     this.sizeBag = [];
     this.events = [];
     this.score = 0;
@@ -193,7 +211,9 @@ export class GameEngine {
   hold(): boolean {
     if (this.status !== 'playing' || !this.active || this.holdUsed) return false;
     const previous = this.held;
-    const original = [...pentominoes, ...hexominoes].find((piece) => piece.id === this.active!.id);
+    const original = Object.values(polyominoesBySize)
+      .flat()
+      .find((piece) => piece.id === this.active!.id);
     this.held = copyPiece(original ?? { ...this.active, cells: normalizeCells(this.active.cells) });
     this.events.push({ type: 'hold' });
     if (previous) this.spawn(previous);
@@ -265,17 +285,14 @@ export class GameEngine {
   }
 
   private drawPiece(): Piece {
-    let size = this.mode === 'pentris' ? 5 : 6;
-    if (this.mode === 'fusion') {
-      if (this.sizeBag.length === 0) this.sizeBag = this.shuffle([5, 6]);
-      size = this.sizeBag.pop()!;
+    if (this.sizeBag.length === 0) this.sizeBag = this.shuffle(this.pieceSizes);
+    const size = this.sizeBag.pop()!;
+    let bag = this.shapeBags.get(size);
+    if (!bag || bag.length === 0) {
+      bag = this.shuffle(polyominoesBySize[size]);
+      this.shapeBags.set(size, bag);
     }
-    if (size === 5) {
-      if (this.pentominoBag.length === 0) this.pentominoBag = this.shuffle(pentominoes);
-      return copyPiece(this.pentominoBag.pop()!);
-    }
-    if (this.hexominoBag.length === 0) this.hexominoBag = this.shuffle(hexominoes);
-    return copyPiece(this.hexominoBag.pop()!);
+    return copyPiece(bag.pop()!);
   }
 
   private fillQueue(): void {
