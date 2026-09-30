@@ -63,6 +63,9 @@ function surface() {
       radius: Math.max(width, height),
     }),
   );
+  context.drawImage = vi.fn(() =>
+    paint.push({ kind: 'glow', alpha: Number(context.globalAlpha), color: '', radius: 0 }),
+  );
   return {
     style: { transform: '' },
     width: 0,
@@ -244,6 +247,39 @@ describe('clear and landing effects', () => {
       expect(paint.filter((mark) => mark.alpha > 0)).toEqual([]);
     },
   );
+
+  it.each([1, 2, 3, 4, 5, 6])(
+    'keeps the early clear %s glow but removes it before the next piece enters',
+    (amount) => {
+      const { effects } = setup(seededRandom());
+      effects.handle({ type: 'clear', amount, cells: [{ x: 3, y: 18, color: 0 }] }, 10);
+      effects.render(0.05, 30, false);
+      const paint = created[0].paint;
+      expect(
+        paint.filter((mark) => mark.kind === 'glow' && mark.alpha > 0.5).length,
+      ).toBeGreaterThan(20);
+      paint.length = 0;
+      const entryDelay = 0.36 + (amount - 1) * 0.06;
+      effects.render(entryDelay - 0.05, 30, false);
+      expect(paint.filter((mark) => mark.kind === 'glow' && mark.alpha > 0)).toEqual([]);
+      expect(paint.filter((mark) => mark.alpha > 0.32)).toEqual([]);
+      expect(paint.some((mark) => mark.kind === 'core' && mark.alpha > 0)).toBe(true);
+    },
+  );
+
+  it('lets a clear take over the preceding hard-drop landing spray before entry', () => {
+    const { effects } = setup(seededRandom());
+    const cells = [{ x: 3, y: 21, color: 0 }];
+    effects.handle({ type: 'drop', distance: 18, cells }, 10);
+    effects.handle({ type: 'lock', cells }, 10);
+    effects.render(0.01, 30, false);
+    expect(created[0].paint.some((mark) => mark.kind === 'glow' && mark.alpha > 0.5)).toBe(true);
+    effects.handle({ type: 'clear', amount: 1, rows: [21], cells }, 10);
+    created[0].paint.length = 0;
+    effects.render(0.36, 30, false);
+    expect(created[0].paint.filter((mark) => mark.kind === 'glow' && mark.alpha > 0)).toEqual([]);
+    expect(created[0].paint.filter((mark) => mark.alpha > 0.32)).toEqual([]);
+  });
 
   it('shakes the whole application more strongly for six lines than one line', () => {
     const { effects, application, frame } = setup();

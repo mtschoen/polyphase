@@ -16,6 +16,7 @@ interface Particle {
   velocityY: number;
   life: number;
   maximumLife: number;
+  clearFadeDuration: number;
   size: number;
   color: string;
   dust: boolean;
@@ -125,6 +126,8 @@ export class BoardEffects {
       this.landingShake = Math.min(2.5 * IMPACT_SCALE, this.landingShake + 1.6 * IMPACT_SCALE);
       this.emitParticles(cells, null, maximumParticles);
     } else {
+      // The clear replaces its preceding lock spray so entry is free of landing halos.
+      this.particles = this.particles.filter((particle) => !particle.landing);
       const tier = getClearTier(
         event.type === 'resonance' ? 4 : (event.amount ?? event.rows?.length ?? 1),
       );
@@ -191,6 +194,7 @@ export class BoardEffects {
           velocityY: Math.sin(angle) * speed,
           life,
           maximumLife: life,
+          clearFadeDuration: tier && !ember ? 0.25 + tier.power * 0.045 : Infinity,
           size: 0.065 + this.random() * 0.1,
           color: dust
             ? '#b8cdc8'
@@ -353,6 +357,12 @@ export class BoardEffects {
     for (const particle of this.particles) {
       particle.life -= delta;
       if (particle.life <= 0) continue;
+      const age = particle.maximumLife - particle.life;
+      // End broad clear glows before entry while preserving the full landing spray.
+      if (age >= particle.clearFadeDuration) {
+        particle.life = 0;
+        continue;
+      }
       particle.x += particle.velocityX * delta;
       particle.y += particle.velocityY * delta;
       particle.velocityY += delta * (particle.dust ? 3 : 8);
@@ -366,6 +376,7 @@ export class BoardEffects {
         particle.landing && !particle.dust
           ? Math.min(1, remaining * 1.8)
           : remaining ** 1.2 * (particle.dust ? 0.65 : particle.ember ? 0.32 : 0.95);
+      context.globalAlpha *= Math.min(1, (particle.clearFadeDuration - age) / 0.12);
       context.fillStyle = particle.color;
       if (!particle.dust) {
         context.strokeStyle = particle.color;
