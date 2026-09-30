@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+artifacts
+.agent-lock
+.superpowers
+.claude/scripts
+package-lock.json

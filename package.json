@@ -1,0 +1,1 @@
+{"name":"polyphase","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite --host 127.0.0.1 --port 5173 --strictPort","build":"tsc --noEmit && vite build","preview":"vite preview --host 127.0.0.1 --port 4173 --strictPort","test":"vitest run","coverage":"vitest run --coverage","lint":"eslint .","format":"prettier --write .","format:check":"prettier --check ."}}
