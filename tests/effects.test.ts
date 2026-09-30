@@ -174,6 +174,42 @@ describe('clear and landing effects', () => {
     expect(frame.style.transform).toBe(shake);
   });
 
+  it('reduces only large-particle overlay sampling while preserving CSS size, density and shake', () => {
+    vi.stubGlobal('window', { innerWidth: 1000, innerHeight: 800, devicePixelRatio: 2 });
+    const { effects, frame } = setup();
+    effects.handle({ type: 'lock', cells: [{ x: 3, y: 18, color: 0 }] }, 10);
+    effects.render(0.01, 30, false);
+    const overlay = created[0];
+    expect(overlay.width).toBe(2000);
+    const count = overlay.paint.filter(
+      (mark) => mark.kind === 'core' || mark.kind === 'rectangle',
+    ).length;
+    const radii = overlay.paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius);
+    const shake = frame.style.transform;
+    overlay.paint.length = 0;
+    effects.setImpactSettings({
+      ...DEFAULT_IMPACT_SETTINGS,
+      particleSize: DEFAULT_IMPACT_SETTINGS.particleSize * 3,
+    });
+    effects.render(0, 30, false);
+    expect(overlay.width).toBe(Math.round(2000 / Math.sqrt(3)));
+    expect(overlay.height).toBe(Math.round(1600 / Math.sqrt(3)));
+    expect(
+      overlay.paint.filter((mark) => mark.kind === 'core' || mark.kind === 'rectangle'),
+    ).toHaveLength(count);
+    const enlarged = overlay.paint
+      .filter((mark) => mark.kind === 'core')
+      .map((mark) => mark.radius);
+    enlarged.forEach((radius, index) => expect(radius).toBeCloseTo(radii[index] * 3));
+    expect(frame.style.transform).toBe(shake);
+    effects.setImpactSettings({
+      ...DEFAULT_IMPACT_SETTINGS,
+      particleSize: DEFAULT_IMPACT_SETTINGS.particleSize / 2,
+    });
+    effects.render(0, 30, false);
+    expect(overlay.width).toBe(2000);
+  });
+
   it('scales an in-flight shake independently of particle count and size', () => {
     const { effects, application } = setup();
     const settings = { ...DEFAULT_IMPACT_SETTINGS, screenShake: 1 };

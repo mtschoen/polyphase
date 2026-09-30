@@ -220,7 +220,10 @@ export class BoardEffects {
     landingGuide: readonly { x: number; y: number }[] = [],
   ): void {
     const context = this.context;
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    // Larger glows cover more pixels. Lower only the FX sampling above the default size;
+    // CSS dimensions, particle geometry and the crisp board/universe canvases stay unchanged.
+    const relativeSize = this.impactSettings.particleSize / DEFAULT_IMPACT_SETTINGS.particleSize;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2) / Math.sqrt(Math.max(1, relativeSize));
     if (
       this.width !== window.innerWidth ||
       this.height !== window.innerHeight ||
