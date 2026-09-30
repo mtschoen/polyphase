@@ -11,39 +11,51 @@ export function scheduleGroove(
   phrase: number,
 ): void {
   const { bar, stepInBar, stepsPerBar, stepDuration, pieceSize } = position;
-  const compound = pieceSize === 6;
-  const pulse = compound ? stepInBar % 3 === 0 : stepInBar % 2 === 0;
-  const groupAccent = stepInBar === 0 || (pieceSize === 5 && stepInBar === 6);
+  const pulse = stepInBar % 2 === 0;
+  const groupAccent = stepInBar === 0 || ((pieceSize === 5 || pieceSize === 6) && stepInBar === 6);
   if (pulse) instruments.kick(time, (groupAccent ? 0.255 : 0.225) + energy * 0.045, 'music');
 
-  const bassAnswer = compound ? stepInBar === 2 || stepInBar === 5 : stepInBar % 2 === 1;
-  if (groupAccent || (compound && pulse) || bassAnswer) {
-    const fifth = bassAnswer && (compound ? stepInBar === 2 : stepInBar % 4 === 3);
+  const bassAnswer = stepInBar % 2 === 1;
+  if (groupAccent || bassAnswer) {
+    const fifth = bassAnswer && stepInBar % 4 === 3;
     const pickup = bassAnswer && stepInBar === stepsPerBar - 1 && phrase % 4 === 3;
     const pitch = (fifth ? chord[2] : chord[0]) - 12 + (pickup ? 12 : 0);
     instruments.note(
       pitch,
       time,
       stepDuration * (bassAnswer ? 0.62 : 0.72),
-      (bassAnswer ? 0.105 : 0.09) + energy * 0.018,
+      0.155 + energy * 0.022,
       'music',
       {
         wave: bassWave,
         attack: 0.004,
         release: 0.06,
         cutoff: 680 + energy * 550,
-        pan: -0.08,
+        pan: 0,
       },
     );
+    // Keep the sub in an audible octave and centered beneath the melodic bass.
+    const lowerOctave = pitch - 12;
+    const subPitch = lowerOctave < 24 ? lowerOctave + 12 : lowerOctave;
+    instruments.note(subPitch, time, stepDuration * 0.72, 0.075 + energy * 0.018, 'music', {
+      wave: 'sine',
+      attack: 0.003,
+      release: 0.07,
+      cutoff: 200,
+      pan: 0,
+    });
   }
 
-  const backbeat = compound
-    ? stepInBar === 3
-    : pieceSize === 5
-      ? stepInBar === 4 || stepInBar === 8
-      : pieceSize === 1
-        ? bar % 2 === 1 && stepInBar === 0
-        : stepInBar === 2 || (pieceSize === 4 && stepInBar === 6);
+  const backbeat =
+    pieceSize === 1
+      ? bar % 2 === 1 && stepInBar === 0
+      : pieceSize === 3
+        ? stepInBar === 2 || stepInBar === 4
+        : pieceSize === 5
+          ? stepInBar === 4 || stepInBar === 8
+          : pieceSize === 6
+            ? stepInBar === 2 || stepInBar === 8
+            : stepInBar === 2 || (pieceSize === 4 && stepInBar === 6);
   if (backbeat) {
     // Three tight noise transients create a clap without samples or a lingering wash.
     for (let hit = 0; hit < 3; hit++)
@@ -62,7 +74,7 @@ export function scheduleGroove(
     });
   }
 
-  const openHat = compound ? stepInBar === 2 || stepInBar === 5 : stepInBar % 2 === 1;
+  const openHat = stepInBar % 2 === 1;
   instruments.noise(
     time,
     openHat ? stepDuration * 0.38 : 0.024,
@@ -73,7 +85,8 @@ export function scheduleGroove(
   );
   if (energy > 0.72)
     instruments.noise(time + stepDuration / 2, 0.022, 0.012, 8500, 'highpass', 'music');
-  if (phrase % 4 === 3 && stepInBar === stepsPerBar - 1) {
+  const loopBars = pieceSize === 1 ? 8 : 4;
+  if (phrase % loopBars === loopBars - 1 && stepInBar === stepsPerBar - 1) {
     instruments.noise(time + stepDuration / 2, 0.045, 0.03, 2400, 'bandpass', 'music');
     instruments.noise(time + stepDuration * 0.75, 0.04, 0.038, 3200, 'bandpass', 'music');
   }

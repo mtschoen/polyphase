@@ -1,6 +1,7 @@
 import type { AudioLane, VoiceOptions } from './audio';
 import type { Mode } from './game/types';
 import { scheduleGroove } from './groove';
+import { melodyForBar } from './score-melodies';
 export type SoundtrackMode = Mode | 'monotris' | 'ditris' | 'tritris' | 'tetris';
 const DEFAULT_SIZES: Record<SoundtrackMode, readonly number[]> = {
   monotris: [1],
@@ -29,16 +30,12 @@ export function soundtrackForSizes(sizes: readonly number[]): {
   const selected = normalizeMusicSizes(sizes);
   return {
     title: selected.length === 1 ? `The ${selected[0]}-Cell Dance` : 'Polyphase Folk Circuit',
-    meter: selected.map((size) => (size === 6 ? '6/8' : `${size}/4`)).join(' + '),
-    tempo: selected.includes(6)
-      ? selected.length === 1
-        ? '96 dotted quarters/min'
-        : '132 quarter / 96 dotted-quarter beats/min'
-      : '132 quarter notes/min',
+    meter: selected.map((size) => `${size}/4`).join(' + '),
+    tempo: '132 quarter notes/min',
   };
 }
 
-/** Quarter-note pulse in Pentris. Sextris uses 96 dotted-quarter beats per minute. */
+/** Every mode shares this quarter-note tempo; each bar contains its piece count in beats. */
 export const BEAT_DURATION = 60 / 132;
 export const PAD_PANNING = [-0.65, 0.35, -0.25, 0.65] as const;
 export const MELODY_WAVE: OscillatorType = 'triangle';
@@ -52,8 +49,12 @@ export const SOUNDTRACKS: Record<SoundtrackMode, { title: string; meter: string;
     tritris: soundtrackForSizes([3]),
     tetris: soundtrackForSizes([4]),
     pentris: { title: 'The Fifth Step', meter: '5/4 · 3+2', tempo: '132 quarter notes/min' },
-    sextris: { title: 'Six in the Current', meter: '6/8 · 3+3', tempo: '96 dotted quarters/min' },
-    fusion: { title: 'Five Meets Six', meter: 'Alternating 5/4 + 6/8', tempo: '132 / 96' },
+    sextris: { title: 'Six in the Current', meter: '6/4 · 3+3', tempo: '132 quarter notes/min' },
+    fusion: {
+      title: 'Five Meets Six',
+      meter: 'Alternating 5/4 + 6/4',
+      tempo: '132 quarter notes/min',
+    },
   };
 const THEME_TRANSPOSITIONS = [-7, -5, -12] as const;
 const PALETTES = [
@@ -64,233 +65,8 @@ const PALETTES = [
 const HARMONY = [
   [57, 60, 64, 69], // A minor
   [62, 65, 69, 72], // D minor
-  [53, 57, 60, 65], // F major
-  [55, 59, 62, 67], // G major
-  [52, 56, 59, 64], // E major, harmonic-minor cadence
-  [60, 64, 67, 72], // C major
 ] as const;
-const CHORD_PROGRESSION = [0, 0, 1, 0, 2, 5, 4, 0, 0, 3, 5, 2, 1, 0, 4, 0] as const;
-type MelodyEvent = readonly [note: number, eighths: number];
-// Traditional Korobeiniki, independently rephrased for these meters.
-// Source: https://commons.wikimedia.org/wiki/File:Korobeiniki.svg (public-domain folk score).
-// Harmony, bass, percussion, countermelody, form and synthesis here are original.
-const FIVE_MELODY: readonly (readonly MelodyEvent[])[] = [
-  [
-    [76, 2],
-    [71, 1],
-    [72, 1],
-    [74, 2],
-    [72, 1],
-    [71, 1],
-    [69, 2],
-  ],
-  [
-    [69, 2],
-    [72, 1],
-    [76, 1],
-    [74, 2],
-    [72, 1],
-    [71, 1],
-    [72, 2],
-  ],
-  [
-    [74, 2],
-    [76, 2],
-    [72, 2],
-    [69, 2],
-    [69, 2],
-  ],
-  [
-    [74, 3],
-    [77, 1],
-    [81, 2],
-    [79, 1],
-    [77, 1],
-    [76, 2],
-  ],
-  [
-    [72, 3],
-    [76, 1],
-    [74, 2],
-    [72, 1],
-    [71, 1],
-    [71, 2],
-  ],
-  [
-    [72, 2],
-    [74, 2],
-    [76, 2],
-    [72, 2],
-    [69, 2],
-  ],
-  [
-    [69, 2],
-    [72, 1],
-    [76, 1],
-    [74, 2],
-    [72, 1],
-    [71, 1],
-    [68, 2],
-  ],
-  [
-    [69, 6],
-    [71, 1],
-    [72, 1],
-    [74, 2],
-  ],
-  [
-    [76, 2],
-    [72, 2],
-    [69, 2],
-    [71, 2],
-    [72, 2],
-  ],
-  [
-    [74, 2],
-    [71, 2],
-    [67, 2],
-    [69, 2],
-    [71, 2],
-  ],
-  [
-    [72, 2],
-    [69, 2],
-    [64, 2],
-    [67, 2],
-    [69, 2],
-  ],
-  [
-    [65, 2],
-    [69, 2],
-    [72, 2],
-    [76, 2],
-    [77, 2],
-  ],
-  [
-    [74, 2],
-    [77, 1],
-    [81, 1],
-    [79, 2],
-    [77, 2],
-    [74, 2],
-  ],
-  [
-    [76, 2],
-    [72, 1],
-    [69, 1],
-    [72, 2],
-    [71, 2],
-    [69, 2],
-  ],
-  [
-    [71, 2],
-    [68, 2],
-    [64, 2],
-    [68, 1],
-    [71, 1],
-    [74, 2],
-  ],
-  [
-    [69, 6],
-    [72, 1],
-    [71, 1],
-    [69, 2],
-  ],
-];
-const SIX_MELODY: readonly (readonly MelodyEvent[])[] = [
-  [
-    [76, 2],
-    [71, 1],
-    [72, 1],
-    [74, 1],
-    [72, 1],
-  ],
-  [
-    [71, 1],
-    [69, 2],
-    [69, 1],
-    [72, 1],
-    [76, 1],
-  ],
-  [
-    [74, 2],
-    [72, 1],
-    [71, 1],
-    [72, 1],
-    [74, 1],
-  ],
-  [
-    [76, 2],
-    [72, 1],
-    [69, 3],
-  ],
-  [
-    [74, 2],
-    [77, 1],
-    [81, 1],
-    [79, 1],
-    [77, 1],
-  ],
-  [
-    [76, 2],
-    [72, 1],
-    [76, 1],
-    [74, 1],
-    [72, 1],
-  ],
-  [
-    [71, 2],
-    [72, 1],
-    [74, 1],
-    [76, 1],
-    [68, 1],
-  ],
-  [[69, 6]],
-  [
-    [76, 2],
-    [72, 1],
-    [69, 3],
-  ],
-  [
-    [74, 2],
-    [71, 1],
-    [67, 3],
-  ],
-  [
-    [72, 2],
-    [69, 1],
-    [64, 3],
-  ],
-  [
-    [65, 1],
-    [69, 1],
-    [72, 1],
-    [76, 2],
-    [77, 1],
-  ],
-  [
-    [74, 2],
-    [77, 1],
-    [79, 1],
-    [77, 1],
-    [74, 1],
-  ],
-  [
-    [76, 2],
-    [72, 1],
-    [71, 1],
-    [72, 1],
-    [69, 1],
-  ],
-  [
-    [71, 2],
-    [68, 1],
-    [64, 1],
-    [68, 1],
-    [71, 1],
-  ],
-  [[69, 6]],
-];
+const CHORD_PROGRESSION = [0, 0, 1, 0] as const;
 export interface ScorePosition {
   bar: number;
   stepInBar: number;
@@ -305,7 +81,7 @@ export function scorePosition(
   sizes?: readonly number[],
 ): ScorePosition {
   const selected = sizes ? normalizeMusicSizes(sizes) : DEFAULT_SIZES[mode];
-  const lengths = selected.map((size) => (size === 6 ? 6 : size * 2));
+  const lengths = selected.map((size) => size * 2);
   const cycleLength = lengths.reduce((total, length) => total + length, 0);
   let stepInBar = sequenceStep % cycleLength;
   let index = 0;
@@ -314,20 +90,13 @@ export function scorePosition(
     index++;
   }
   const bar = Math.floor(sequenceStep / cycleLength) * selected.length + index;
-  const compound = selected[index] === 6;
   return {
     bar,
     stepInBar,
     stepsPerBar: lengths[index],
-    stepDuration: compound ? 60 / 96 / 3 : BEAT_DURATION / 2,
+    stepDuration: BEAT_DURATION / 2,
     pieceSize: selected[index],
   };
-}
-function continuousMelody(mode: SoundtrackMode, sizes?: readonly number[]): boolean {
-  const selected = sizes ? normalizeMusicSizes(sizes) : DEFAULT_SIZES[mode];
-  return selected.length === 1
-    ? selected[0] < 5
-    : !(selected.length === 2 && selected[0] === 5 && selected[1] === 6);
 }
 export function chordForStep(
   mode: SoundtrackMode,
@@ -335,9 +104,13 @@ export function chordForStep(
   theme: number,
   sizes?: readonly number[],
 ): readonly number[] {
-  const { bar } = scorePosition(mode, sequenceStep, sizes);
-  const phrase = continuousMelody(mode, sizes) ? Math.floor(sequenceStep / 10) : bar;
-  return HARMONY[CHORD_PROGRESSION[phrase % 16]].map((note) => note + THEME_TRANSPOSITIONS[theme]);
+  const { bar, pieceSize } = scorePosition(mode, sequenceStep, sizes);
+  const selected = sizes ? normalizeMusicSizes(sizes) : DEFAULT_SIZES[mode];
+  const phraseBar = Math.floor(bar / selected.length);
+  const phrase = pieceSize === 1 ? Math.floor(phraseBar / 2) : phraseBar;
+  return HARMONY[CHORD_PROGRESSION[phrase % CHORD_PROGRESSION.length]].map(
+    (note) => note + THEME_TRANSPOSITIONS[theme],
+  );
 }
 export interface ScoreInstruments {
   note(
@@ -376,13 +149,10 @@ export function scheduleStep(
   );
   const chord = chordForStep(mode, sequenceStep, theme, sizes);
   const palette = PALETTES[theme];
-  const compound = pieceSize === 6;
-  const continuous = continuousMelody(mode, sizes);
-  const phraseIndex = continuous ? Math.floor(sequenceStep / 10) : bar;
-  const phrase = phraseIndex % 16;
-  const variation = Math.floor(phraseIndex / 16) % 3;
-  const melody = (continuous ? FIVE_MELODY : compound ? SIX_MELODY : FIVE_MELODY)[phrase];
-  const melodyStep = continuous ? sequenceStep % 10 : stepInBar;
+  const selected = sizes ? normalizeMusicSizes(sizes) : DEFAULT_SIZES[mode];
+  const phraseIndex = Math.floor(bar / selected.length);
+  const melody = melodyForBar(pieceSize, phraseIndex);
+  const melodyStep = stepInBar;
   let onset = 0;
   for (const [pitch, eighths] of melody) {
     if (onset === melodyStep) {
@@ -394,7 +164,7 @@ export function scheduleStep(
         pan: 0.12,
         cutoff: palette.cutoff + energy * 2300,
       });
-      if (energy > 0.7 || variation === 2)
+      if (energy > 0.7)
         instruments.note(
           note + 12,
           time,
@@ -425,28 +195,11 @@ export function scheduleStep(
   }
   scheduleGroove(
     instruments,
-    { bar, stepInBar, stepsPerBar, stepDuration, pieceSize },
+    { bar: phraseIndex, stepInBar, stepsPerBar, stepDuration, pieceSize },
     chord,
     palette.bassWave,
     energy,
     time,
-    phrase,
+    phraseIndex,
   );
-  // A quieter broken-chord answer leaves the lead melody in front.
-  if (stepInBar % 2 === 1 && (phrase >= 8 || energy > 0.28 || variation === 1)) {
-    instruments.note(
-      chord[(stepInBar + bar) % 4] + 12,
-      time,
-      stepDuration * 0.62,
-      0.027 + energy * 0.009,
-      'music',
-      {
-        wave: MELODY_WAVE,
-        attack: 0.004,
-        release: 0.04,
-        pan: -0.45,
-        cutoff: 2200 + energy * 1800,
-      },
-    );
-  }
 }
