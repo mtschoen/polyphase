@@ -1,12 +1,16 @@
 import {
   BEAT_DURATION,
-  STEP_DURATION,
-  CHORDS,
+  chordForStep,
+  scorePosition,
+  defaultMusicSizes,
+  normalizeMusicSizes,
   PAD_PANNING,
   frequencyForNote,
   MELODY_WAVE,
   scheduleStep,
 } from './score';
+import type { SoundtrackMode } from './score';
+export { SOUNDTRACKS, soundtrackForSizes } from './score';
 
 type SoundEffect =
   'move' | 'rotate' | 'drop' | 'lock' | 'clear' | 'hold' | 'resonance' | 'gameover' | 'level';
@@ -37,7 +41,7 @@ interface ActiveVoice {
 const unitInterval = (value: number): number =>
   Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0;
 
-/** Original procedural score. Audio is created only after a user gesture calls start(). */
+/** Folk melody with an original adaptive arrangement. start() requires a user gesture. */
 export class AudioEngine {
   private context?: AudioContext;
   private master?: GainNode;
@@ -53,6 +57,8 @@ export class AudioEngine {
   private volume = 0.65;
   private intensity = 0;
   private theme = 0;
+  private mode: SoundtrackMode = 'pentris';
+  private pieceSizes: readonly number[] = [5];
   private sequenceStep = 0;
   private nextNoteTime = 0;
   private lastInteractionTime = -Infinity;
@@ -72,8 +78,8 @@ export class AudioEngine {
     const time = this.context.currentTime;
     this.ramp(this.musicBus.output.gain, playing ? 1 : 0, playing ? 0.12 : 0.035);
     if (playing) {
-      // Re-enter on the current chord, rather than replaying notes missed while paused.
-      this.sequenceStep = Math.floor(this.sequenceStep / 32) * 32;
+      // Re-enter at a whole bar instead of replaying notes missed while paused.
+      this.sequenceStep -= scorePosition(this.mode, this.sequenceStep, this.pieceSizes).stepInBar;
       this.startScheduler();
     } else {
       this.stopScheduler();
@@ -93,6 +99,31 @@ export class AudioEngine {
 
   setIntensity(intensity: number): void {
     this.intensity = unitInterval(intensity);
+  }
+
+  /** Select a mode's default meters, then call setPieceSizes for a custom Fusion mix. */
+  setMode(mode: SoundtrackMode): void {
+    if (this.disposed || this.mode === mode) return;
+    this.mode = mode;
+    this.pieceSizes = defaultMusicSizes(mode);
+    this.restartPhrase();
+  }
+
+  /** Cycle chosen sizes on whole bars: 1..5 use n/4, six uses compound 6/8. */
+  setPieceSizes(sizes: readonly number[]): void {
+    if (this.disposed) return;
+    const selected = normalizeMusicSizes(sizes);
+    if (selected.join(',') === this.pieceSizes.join(',')) return;
+    this.pieceSizes = selected;
+    this.restartPhrase();
+  }
+
+  private restartPhrase(): void {
+    this.sequenceStep = 0;
+    if (this.context && this.playing) {
+      this.stopVoices('music', this.context.currentTime);
+      this.nextNoteTime = this.context.currentTime + 0.06;
+    }
   }
 
   setTheme(theme: number): void {
@@ -222,7 +253,7 @@ export class AudioEngine {
     compressor.release.value = 0.22;
     this.master.connect(compressor).connect(context.destination);
     this.permanentNodes.push(this.master, compressor);
-    this.musicBus = this.createBus(this.playing ? 1 : 0, 0.26);
+    this.musicBus = this.createBus(this.playing ? 1 : 0, 0.16);
     this.effectBus = this.createBus(1, 0.31);
     const noiseLength = Math.ceil(context.sampleRate * 3);
     this.noiseBuffer = context.createBuffer(1, noiseLength, context.sampleRate);
@@ -292,24 +323,30 @@ export class AudioEngine {
     if (this.nextNoteTime < time - 0.1) {
       // Background throttling must not turn elapsed time into a burst of queued notes.
       this.stopVoices('music', time);
-      this.sequenceStep = Math.floor(this.sequenceStep / 32) * 32;
+      this.sequenceStep -= scorePosition(this.mode, this.sequenceStep, this.pieceSizes).stepInBar;
       this.nextNoteTime = time + 0.03;
     }
     while (this.nextNoteTime < time + 0.12) {
       scheduleStep(
         { note: this.note.bind(this), kick: this.kick.bind(this), noise: this.noise.bind(this) },
         this.sequenceStep,
-        this.currentChord(),
+        this.mode,
+        this.theme,
         this.intensity,
         this.nextNoteTime,
+        this.pieceSizes,
       );
-      this.nextNoteTime += STEP_DURATION;
-      this.sequenceStep = (this.sequenceStep + 1) % 128;
+      this.nextNoteTime += scorePosition(
+        this.mode,
+        this.sequenceStep,
+        this.pieceSizes,
+      ).stepDuration;
+      this.sequenceStep++;
     }
   }
 
   private currentChord(): readonly number[] {
-    return CHORDS[this.theme][Math.floor(this.sequenceStep / 32) % 4];
+    return chordForStep(this.mode, this.sequenceStep, this.theme, this.pieceSizes);
   }
 
   private note(
