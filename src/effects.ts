@@ -1,7 +1,13 @@
 import { getClearTier, type ClearTier } from './clear-tiers';
 import { COLORS, type CellMark, type GameEvent } from './game/types';
+import {
+  DEFAULT_IMPACT_SETTINGS,
+  normalizeImpactSettings,
+  type ImpactSettings,
+} from './impact-settings';
 
 const IMPACT_SCALE = 1.5;
+const MAXIMUM_PARTICLES = 8000;
 
 interface Particle {
   x: number;
@@ -14,6 +20,7 @@ interface Particle {
   color: string;
   dust: boolean;
   ember: boolean;
+  landing: boolean;
   shard: boolean;
 }
 interface Blast {
@@ -50,6 +57,7 @@ export class BoardEffects {
   private landingShake = 0;
   private width = 0;
   private height = 0;
+  private impactSettings = { ...DEFAULT_IMPACT_SETTINGS };
 
   constructor(
     private board: HTMLCanvasElement,
@@ -69,12 +77,25 @@ export class BoardEffects {
       const context = sprite.getContext('2d')!;
       const glow = context.createRadialGradient(32, 32, 0, 32, 32, 32);
       glow.addColorStop(0, '#fff8e9');
-      glow.addColorStop(0.1, color);
-      glow.addColorStop(0.35, `${color}44`);
+      glow.addColorStop(0.12, color);
+      glow.addColorStop(0.4, `${color}66`);
       glow.addColorStop(1, `${color}00`);
       context.fillStyle = glow;
       context.fillRect(0, 0, 64, 64);
       this.glows.set(color, sprite);
+    }
+  }
+
+  setImpactSettings(settings: ImpactSettings): void {
+    this.impactSettings = normalizeImpactSettings(settings);
+    if (this.impactSettings.particleDensity === 0) {
+      this.particles = [];
+      this.trails = [];
+      this.context.clearRect(0, 0, this.width, this.height);
+    }
+    if (this.impactSettings.screenShake === 0) {
+      this.frame.style.transform = '';
+      this.application.style.transform = '';
     }
   }
 
@@ -94,11 +115,15 @@ export class BoardEffects {
       return;
     // Bound work at event ingestion as well as retained particles.
     const cells = event.cells.slice(0, Math.min(256, Math.max(1, width) * 6));
+    const maximumParticles = Math.min(
+      MAXIMUM_PARTICLES,
+      Math.round(Math.max(1200, width * 420) * this.impactSettings.particleDensity),
+    );
     if (event.type === 'drop') {
-      this.addDropTrail(cells, event.distance ?? 0);
+      if (this.impactSettings.particleDensity > 0) this.addDropTrail(cells, event.distance ?? 0);
     } else if (event.type === 'lock') {
       this.landingShake = Math.min(2.5 * IMPACT_SCALE, this.landingShake + 1.6 * IMPACT_SCALE);
-      this.emitParticles(cells, null);
+      this.emitParticles(cells, null, maximumParticles);
     } else {
       const tier = getClearTier(
         event.type === 'resonance' ? 4 : (event.amount ?? event.rows?.length ?? 1),
@@ -107,7 +132,7 @@ export class BoardEffects {
         42 * IMPACT_SCALE,
         this.screenShake + tier.shake * 1.25 * IMPACT_SCALE,
       );
-      this.emitParticles(cells, tier);
+      this.emitParticles(cells, tier, maximumParticles);
       const rows = event.rows ?? [...new Set(cells.map((cell) => cell.y))];
       for (const row of rows.slice(0, 24))
         this.beams.push({ row, age: 0, color: tier.accent, power: tier.power });
@@ -115,7 +140,6 @@ export class BoardEffects {
       const centerY = cells.reduce((sum, cell) => sum + cell.y + 0.5, 0) / cells.length;
       this.blasts.push({ x: centerX, y: centerY, age: 0, power: tier.power, color: tier.accent });
     }
-    const maximumParticles = Math.round(Math.min(4200, Math.max(800, width * 280)) * IMPACT_SCALE);
     if (this.particles.length > maximumParticles)
       this.particles.splice(0, this.particles.length - maximumParticles);
     this.blasts = this.blasts.slice(-12);
@@ -140,19 +164,26 @@ export class BoardEffects {
       });
   }
 
-  private emitParticles(cells: CellMark[], tier: ClearTier | null): void {
-    const count = Math.round((tier ? tier.particlesPerCell * 3 : 32) * IMPACT_SCALE);
+  private emitParticles(cells: CellMark[], tier: ClearTier | null, maximumParticles: number): void {
+    const requestedCount = Math.round(
+      (tier ? tier.particlesPerCell * 3 : 32) * IMPACT_SCALE * this.impactSettings.particleDensity,
+    );
+    // Spread the budget across all cleared cells before allocating, avoiding transient overshoot.
+    const count = Math.min(requestedCount, Math.floor(maximumParticles / cells.length));
+    const retained = Math.max(0, maximumParticles - count * cells.length);
+    if (this.particles.length > retained)
+      this.particles.splice(0, this.particles.length - retained);
     for (const cell of cells) {
       for (let index = 0; index < count; index++) {
-        const dust = !tier && index % 4 === 0;
+        const dust = !tier && index % 6 === 0;
         const angle = tier ? this.random() * Math.PI * 2 : -Math.PI * (0.05 + this.random() * 0.9);
-        const speed = tier ? 5 + this.random() * (9 + tier.power * 4) : 3 + this.random() * 5;
+        const speed = tier ? 5 + this.random() * (9 + tier.power * 4) : 4 + this.random() * 8;
         const ember = !!tier && index % 11 === 0;
         const life = tier
           ? ember
             ? 0.7 + this.random() * 0.25
             : 0.3 + tier.power * 0.035 + this.random() * 0.14
-          : 0.46 + this.random() * 0.19;
+          : 0.65 + this.random() * 0.35;
         this.particles.push({
           x: cell.x + this.random(),
           y: cell.y + (tier ? this.random() : 0.9),
@@ -160,7 +191,7 @@ export class BoardEffects {
           velocityY: Math.sin(angle) * speed,
           life,
           maximumLife: life,
-          size: 0.024 + this.random() * 0.025,
+          size: 0.065 + this.random() * 0.1,
           color: dust
             ? '#b8cdc8'
             : tier && index % 3 === 0
@@ -168,7 +199,8 @@ export class BoardEffects {
               : COLORS[cell.color % COLORS.length],
           dust,
           ember,
-          shard: !!tier && index % 7 === 0,
+          landing: !tier,
+          shard: !dust && index % 3 === 0,
         });
       }
     }
@@ -228,6 +260,7 @@ export class BoardEffects {
   }
 
   private shakeTransform(amplitude: number): string {
+    amplitude *= this.impactSettings.screenShake;
     return amplitude > 0.1
       ? `translate3d(${(this.random() - 0.5) * amplitude * 2}px,${(this.random() - 0.5) * amplitude * 2}px,0)`
       : '';
@@ -245,9 +278,9 @@ export class BoardEffects {
       glow.addColorStop(1, trail.color);
       context.fillStyle = glow;
       context.fillRect(
-        (trail.x - 0.18 * IMPACT_SCALE) * size,
+        (trail.x - 0.18 * IMPACT_SCALE * this.impactSettings.particleSize) * size,
         top,
-        size * 0.36 * IMPACT_SCALE,
+        size * 0.36 * IMPACT_SCALE * this.impactSettings.particleSize,
         bottom - top,
       );
     }
@@ -326,24 +359,34 @@ export class BoardEffects {
       particle.velocityX *= Math.exp(-delta * (particle.dust ? 3 : 1.8));
       const x = particle.x * size;
       const y = particle.y * size;
-      const radius = Math.max(0.4, Math.min(1.8, particle.size * size)) * IMPACT_SCALE;
-      const age = particle.maximumLife - particle.life;
+      const radius =
+        Math.max(1.2, Math.min(5, particle.size * size)) * this.impactSettings.particleSize;
+      const remaining = particle.life / particle.maximumLife;
       context.globalAlpha =
-        (particle.life / particle.maximumLife) ** 1.2 *
-        (particle.dust ? 0.65 : particle.ember ? 0.32 : 0.95);
+        particle.landing && !particle.dust
+          ? Math.min(1, remaining * 1.8)
+          : remaining ** 1.2 * (particle.dust ? 0.65 : particle.ember ? 0.32 : 0.95);
       context.fillStyle = particle.color;
       if (!particle.dust) {
         context.strokeStyle = particle.color;
-        context.lineWidth = Math.max(0.65, radius * 0.65);
+        context.lineWidth = Math.max(0.5, radius * 0.55);
         context.beginPath();
         context.moveTo(
-          x - particle.velocityX * size * 0.018,
-          y - particle.velocityY * size * 0.018,
+          x -
+            particle.velocityX *
+              size *
+              (particle.shard ? 0.045 : 0.065) *
+              this.impactSettings.particleSize,
+          y -
+            particle.velocityY *
+              size *
+              (particle.shard ? 0.045 : 0.065) *
+              this.impactSettings.particleSize,
         );
         context.lineTo(x, y);
         context.stroke();
-        if (age < 0.16 && !particle.ember) {
-          const glowRadius = radius * 2.5;
+        if (!particle.ember) {
+          const glowRadius = radius * 4;
           context.drawImage(
             this.glows.get(particle.color)!,
             x - glowRadius,
@@ -353,6 +396,7 @@ export class BoardEffects {
           );
         }
       }
+      context.fillStyle = particle.dust ? particle.color : '#f5fff9';
       if (particle.shard) {
         context.save();
         context.translate(x, y);
@@ -361,7 +405,7 @@ export class BoardEffects {
         context.restore();
       } else {
         context.beginPath();
-        context.arc(x, y, radius * (particle.dust ? 0.85 : 0.95), 0, Math.PI * 2);
+        context.arc(x, y, radius * (particle.dust ? 0.45 : 0.4), 0, Math.PI * 2);
         context.fill();
       }
     }

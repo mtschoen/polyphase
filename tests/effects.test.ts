@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoardEffects } from '../src/effects';
 import { COLORS } from '../src/game/types';
+import { DEFAULT_IMPACT_SETTINGS } from '../src/impact-settings';
 
 function seededRandom() {
   let state = 173;
@@ -54,6 +55,14 @@ function surface() {
       radius: Number(context.lineWidth),
     }),
   );
+  context.fillRect = vi.fn((_x: number, _y: number, width: number, height: number) =>
+    paint.push({
+      kind: 'rectangle',
+      alpha: Number(context.globalAlpha),
+      color: String(context.fillStyle),
+      radius: Math.max(width, height),
+    }),
+  );
   return {
     style: { transform: '' },
     width: 0,
@@ -103,21 +112,121 @@ describe('clear and landing effects', () => {
     return { effects, application, frame };
   }
 
-  it('keeps a dense fan of fine piece-colored landing sparks visibly bright for a quarter second', () => {
+  it('keeps a dense colorful landing fan with white-hot centers bright for a quarter second', () => {
     const { effects } = setup(seededRandom());
     effects.handle({ type: 'lock', cells: [{ x: 3, y: 18, color: 0 }] }, 10);
     effects.render(0.15, 30, false);
     const paint = created[0].paint;
     const bright = () =>
-      paint.filter((mark) => mark.kind === 'core' && mark.color === COLORS[0] && mark.alpha > 0.3);
+      paint.filter((mark) => mark.kind === 'core' && mark.color === '#f5fff9' && mark.alpha > 0.3);
     expect(bright().length).toBeGreaterThanOrEqual(12);
+    expect(paint.some((mark) => mark.kind === 'stroke' && mark.color === COLORS[0])).toBe(true);
     expect(bright().every((mark) => mark.radius <= 2.7)).toBe(true);
     paint.length = 0;
     effects.render(0.1, 30, false);
     expect(bright().length).toBeGreaterThanOrEqual(12);
     paint.length = 0;
-    effects.render(0.5, 30, false);
+    effects.render(0.8, 30, false);
     expect(paint).toEqual([]);
+  });
+
+  it('changes density independently of rendered size and shake', () => {
+    const { effects, application, frame } = setup();
+    const settings = { ...DEFAULT_IMPACT_SETTINGS, particleDensity: 1, screenShake: 1 };
+    effects.setImpactSettings(settings);
+    const cells = [{ x: 3, y: 18, color: 0 }];
+    effects.handle({ type: 'lock', cells }, 10);
+    effects.render(0.01, 30, false);
+    const paint = created[0].paint;
+    const count = paint.filter((mark) => mark.kind === 'core' || mark.kind === 'rectangle').length;
+    const radius = paint.find((mark) => mark.kind === 'core')!.radius;
+    const shake = frame.style.transform;
+    effects.reset();
+    paint.length = 0;
+    effects.setImpactSettings({ ...settings, particleDensity: 2 });
+    effects.handle({ type: 'lock', cells }, 10);
+    effects.render(0.01, 30, false);
+    expect(paint.filter((mark) => mark.kind === 'core' || mark.kind === 'rectangle')).toHaveLength(
+      count * 2,
+    );
+    expect(paint.find((mark) => mark.kind === 'core')!.radius).toBe(radius);
+    expect(frame.style.transform).toBe(shake);
+    expect(application.style.transform).toBe('');
+  });
+
+  it('resizes existing particles without changing their count or shake', () => {
+    const { effects, frame } = setup();
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 1 });
+    effects.handle({ type: 'lock', cells: [{ x: 3, y: 18, color: 0 }] }, 10);
+    effects.render(0.01, 30, false);
+    const paint = created[0].paint;
+    const radii = paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius);
+    const shake = frame.style.transform;
+    paint.length = 0;
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 2 });
+    effects.render(0, 30, false);
+    expect(paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius)).toEqual(
+      radii.map((radius) => radius * 2),
+    );
+    expect(frame.style.transform).toBe(shake);
+  });
+
+  it('scales an in-flight shake independently of particle count and size', () => {
+    const { effects, application } = setup();
+    const settings = { ...DEFAULT_IMPACT_SETTINGS, screenShake: 1 };
+    effects.setImpactSettings(settings);
+    effects.handle({ type: 'clear', amount: 6, cells: [{ x: 3, y: 18, color: 0 }] }, 10);
+    effects.render(0.01, 30, false);
+    const displacement = () => Number(application.style.transform.match(/\(([-\d.]+)px/)?.[1]);
+    const original = displacement();
+    const paint = created[0].paint;
+    const radii = paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius);
+    paint.length = 0;
+    effects.setImpactSettings({ ...settings, screenShake: 0.5 });
+    effects.render(0, 30, false);
+    expect(displacement()).toBe(original / 2);
+    expect(paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius)).toEqual(radii);
+  });
+
+  it('bounds retained particle drawing even after repeated maximum-density bursts', () => {
+    const { effects } = setup();
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleDensity: 4 });
+    const cells = Array.from({ length: 256 }, (_, index) => ({
+      x: index % 16,
+      y: Math.floor(index / 16),
+      color: index % COLORS.length,
+    }));
+    for (let burst = 0; burst < 3; burst++) effects.handle({ type: 'lock', cells }, 100);
+    effects.render(0.01, 30, false);
+    const count = created[0].paint.filter(
+      (mark) => mark.kind === 'core' || mark.kind === 'rectangle',
+    ).length;
+    expect(count).toBeGreaterThan(7000);
+    expect(count).toBeLessThanOrEqual(8000);
+  });
+
+  it('immediately stops current shake and clears particles and trails when their sliders reach zero', () => {
+    const { effects, application, frame } = setup();
+    const cells = [{ x: 3, y: 18, color: 0 }];
+    effects.handle({ type: 'lock', cells }, 10);
+    effects.handle({ type: 'drop', cells, distance: 18 }, 10);
+    effects.render(0.01, 30, false);
+    expect(frame.style.transform).not.toBe('');
+    const paint = created[0].paint;
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, screenShake: 0, particleDensity: 0 });
+    expect(frame.style.transform).toBe('');
+    expect(application.style.transform).toBe('');
+    paint.length = 0;
+    effects.render(0.01, 30, false);
+    expect(paint).toEqual([]);
+    effects.handle({ type: 'lock', cells }, 10);
+    effects.handle({ type: 'drop', cells, distance: 18 }, 10);
+    effects.render(0.01, 30, false);
+    expect(paint).toEqual([]);
+    effects.handle({ type: 'clear', amount: 1, cells }, 10);
+    effects.render(0.01, 30, false);
+    expect(paint.some((mark) => mark.kind === 'core')).toBe(false);
+    expect(created[0].context.ellipse).toHaveBeenCalled();
   });
 
   it.each([1, 6])(

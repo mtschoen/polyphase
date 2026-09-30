@@ -2,6 +2,7 @@ import { COLORS, type GameEvent, type Piece } from './game/types';
 import type { GameEngine } from './game/engine';
 
 import { BoardEffects } from './effects';
+import type { ImpactSettings } from './impact-settings';
 
 function drawBlock(
   context: CanvasRenderingContext2D,
@@ -94,6 +95,9 @@ export class BoardRenderer {
   }
   reset(): void {
     this.effects.reset();
+  }
+  setImpactSettings(settings: ImpactSettings): void {
+    this.effects.setImpactSettings(settings);
   }
   handle(event: GameEvent, width: number): void {
     if (this.reducedMotion) return;
