@@ -128,6 +128,15 @@ afterEach(() => {
 });
 
 describe('club audio mix', () => {
+  it('starts pumping on platforms without cancelAndHoldAtTime', async () => {
+    await engine.start();
+    const seam = engine as unknown as Seam;
+    Object.defineProperty(seam.musicBus.pump.gain, 'cancelAndHoldAtTime', { value: undefined });
+    expect(() => engine.setPlaying(true)).not.toThrow();
+    expect(seam.musicBus.pump.gain.events.some((event) => event.value === 0.22)).toBe(true);
+    expect(seam.musicBus.pump.gain.events.at(-1)?.value).toBe(1);
+  });
+
   it('pumps melodic dry and wet paths while kick and noise bypass the pump', async () => {
     await engine.start();
     const seam = engine as unknown as Seam;

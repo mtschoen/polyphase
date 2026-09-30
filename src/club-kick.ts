@@ -22,7 +22,9 @@ interface ClubInstruments {
 
 /** Gain automation gives melodic dry and echo paths an audible kick-driven recovery. */
 export function scheduleMusicPump(gain: AudioParam, time: number): void {
-  gain.cancelAndHoldAtTime(time);
+  // Quarter-spaced kicks begin after the previous 300 ms recovery has finished.
+  gain.cancelScheduledValues(time);
+  gain.setValueAtTime(1, time);
   gain.linearRampToValueAtTime(0.22, time + 0.008);
   gain.setValueAtTime(0.22, time + 0.035);
   gain.linearRampToValueAtTime(1, time + 0.3);
