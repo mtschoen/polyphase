@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LeaderboardPanel } from '../src/leaderboard-panel';
 import {
   addLeaderboardEntry,
   boardEntries,
@@ -34,6 +35,20 @@ const entry = (id = 'first', score = 100): LeaderboardEntry => ({
 });
 
 describe('local rankings', () => {
+  it('merges other-tab runs before saving stale data or a player-name edit', () => {
+    const device = storage();
+    const stale = loadLeaderboard(device).data;
+    saveLeaderboard(addLeaderboardEntry(empty(), entry('other-tab')), device);
+    saveLeaderboard(addLeaderboardEntry(stale, entry('this-tab')), device);
+    expect(loadLeaderboard(device).data.entries.map(({ id }) => id)).toEqual([
+      'other-tab',
+      'this-tab',
+    ]);
+    saveLeaderboard({ ...stale, playerName: 'Grace' }, device);
+    expect(loadLeaderboard(device).data.playerName).toBe('Grace');
+    expect(loadLeaderboard(device).data.entries).toHaveLength(2);
+  });
+
   it.each([
     ['  Ada   Lovelace  ', 'Ada Lovelace'],
     ['', 'PLAYER'],
@@ -147,5 +162,114 @@ describe('local rankings', () => {
     const data = addLeaderboardEntry(empty(), entry());
     expect(saveLeaderboard(data, blocked)).toBe(false);
     expect(data.entries).toHaveLength(1);
+  });
+});
+
+/** Only native DOM creation/events are substituted; public panel actions use real storage logic. */
+class ElementBoundary {
+  value = '';
+  open = false;
+  hidden = false;
+  textContent = '';
+  id = '';
+  children: ElementBoundary[] = [];
+  private elements = new Map<string, ElementBoundary>();
+  private listeners = new Map<string, (event: { target: ElementBoundary }) => void>();
+  setAttribute() {}
+  append(element: ElementBoundary) {
+    this.children.push(element);
+  }
+  replaceChildren(...elements: ElementBoundary[]) {
+    this.children = elements;
+  }
+  querySelector(selector: string): ElementBoundary {
+    const element = this.elements.get(selector) ?? new ElementBoundary();
+    this.elements.set(selector, element);
+    return element;
+  }
+  addEventListener(type: string, callback: (event: { target: ElementBoundary }) => void) {
+    this.listeners.set(type, callback);
+  }
+  removeEventListener(type: string) {
+    this.listeners.delete(type);
+  }
+  inputName(value: string) {
+    const input = this.querySelector('#leaderboard-name');
+    input.value = value;
+    this.listeners.get('input')!({ target: input });
+  }
+  showModal() {
+    this.open = true;
+  }
+  close() {
+    this.open = false;
+  }
+  remove() {}
+}
+
+afterEach(() => vi.unstubAllGlobals());
+
+function panelEnvironment() {
+  const dialogs: ElementBoundary[] = [];
+  vi.stubGlobal('document', {
+    body: new ElementBoundary(),
+    createElement(tag: string) {
+      const element = new ElementBoundary();
+      if (tag === 'dialog') dialogs.push(element);
+      return element;
+    },
+  });
+  return dialogs;
+}
+
+describe('leaderboard panel persistence', () => {
+  it('keeps a first panel run when a stale second panel records and edits its name', () => {
+    const dialogs = panelEnvironment();
+    const device = storage();
+    const callbacks = { onOpen() {}, onStorageError() {} };
+    const first = new LeaderboardPanel(callbacks, device);
+    const second = new LeaderboardPanel(callbacks, device);
+    dialogs[0].inputName('Ada');
+    first.recordRun(entry('first-panel'));
+    second.recordRun(entry('second-panel'));
+    dialogs[1].inputName('Grace');
+    const saved = loadLeaderboard(device).data;
+    expect(saved.playerName).toBe('Grace');
+    expect(saved.entries.map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: 'first-panel', name: 'Ada' },
+      { id: 'second-panel', name: 'Ada' },
+    ]);
+    first.open('pentris', 'flow');
+    expect(dialogs[0].querySelector('#leaderboard-name').value).toBe('Grace');
+    first.dispose();
+    second.dispose();
+  });
+
+  it('keeps unsaved entries and name when storage recovers after being blocked', () => {
+    const dialogs = panelEnvironment();
+    const device = storage();
+    let blocked = true;
+    const flaky = {
+      getItem(key: string) {
+        if (blocked) throw new Error('blocked');
+        return device.getItem(key);
+      },
+      setItem(key: string, value: string) {
+        if (blocked) throw new Error('blocked');
+        device.setItem(key, value);
+      },
+    };
+    const panel = new LeaderboardPanel({ onOpen() {}, onStorageError() {} }, flaky);
+    dialogs[0].inputName('Ada');
+    panel.recordRun(entry('unsaved'));
+    blocked = false;
+    panel.recordRun(entry('after-recovery'));
+    const saved = loadLeaderboard(device).data;
+    expect(saved.playerName).toBe('Ada');
+    expect(saved.entries.map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: 'after-recovery', name: 'Ada' },
+      { id: 'unsaved', name: 'Ada' },
+    ]);
+    panel.dispose();
   });
 });

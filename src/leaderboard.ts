@@ -143,6 +143,18 @@ export function addLeaderboardEntry(
   };
 }
 
+/** Latest persisted copies win id collisions; explicit name edits can keep the local name. */
+export function mergeLeaderboardData(
+  current: LeaderboardData,
+  latest: LeaderboardData,
+  preservePlayerName = false,
+): LeaderboardData {
+  return {
+    playerName: normalizePlayerName(preservePlayerName ? current.playerName : latest.playerName),
+    entries: rankedEntries([...latest.entries, ...current.entries]),
+  };
+}
+
 export function loadLeaderboard(storage?: LeaderboardStorage): {
   data: LeaderboardData;
   error: boolean;
@@ -179,12 +191,14 @@ export function saveLeaderboard(data: LeaderboardData, storage?: LeaderboardStor
     const entries = data.entries
       .map(validatedEntry)
       .filter((entry): entry is LeaderboardEntry => entry !== null);
+    const latest = loadLeaderboard(storage);
+    const merged = mergeLeaderboardData({ ...data, entries }, latest.data, true);
     (storage ?? localStorage).setItem(
       LEADERBOARD_STORAGE_KEY,
       JSON.stringify({
         version: 1,
-        playerName: normalizePlayerName(data.playerName),
-        entries: rankedEntries(entries),
+        playerName: merged.playerName,
+        entries: merged.entries,
       }),
     );
     return true;

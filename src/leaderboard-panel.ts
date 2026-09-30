@@ -5,6 +5,7 @@ import {
   isLeaderboardKey,
   leaderboardLabel,
   loadLeaderboard,
+  mergeLeaderboardData,
   normalizePlayerName,
   saveLeaderboard,
   type LeaderboardData,
@@ -43,7 +44,7 @@ export class LeaderboardPanel {
       <p class="leaderboard-intro">Your best ten runs for every shape and pace.</p>
       <div class="leaderboard-player"><label for="leaderboard-name">Player name</label>
         <input id="leaderboard-name" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" aria-describedby="leaderboard-name-hint"/></div>
-      <p id="leaderboard-name-hint">Used for future runs. Saved scores keep their original names.</p>
+      <p id="leaderboard-name-hint">Used when a run ends. Saved scores keep their original names.</p>
       <div class="leaderboard-filters">
         <div><label for="leaderboard-board">Shapes</label><select id="leaderboard-board"></select></div>
         <div><label for="leaderboard-pace">Pace</label><select id="leaderboard-pace"><option value="flow">Flow</option><option value="rush">Rush</option></select></div>
@@ -67,6 +68,8 @@ export class LeaderboardPanel {
 
   open(recordKey: string, difficulty: Difficulty): void {
     if (this.disposed) return;
+    this.refresh();
+    this.nameInput.value = this.data.playerName;
     this.recordKey = isLeaderboardKey(recordKey) ? recordKey : 'pentris';
     this.difficulty = difficulty === 'rush' ? 'rush' : 'flow';
     this.callbacks.onOpen();
@@ -77,6 +80,7 @@ export class LeaderboardPanel {
 
   recordRun(run: LeaderboardRun): void {
     if (this.disposed) return;
+    this.refresh();
     const next = addLeaderboardEntry(this.data, {
       ...run,
       id:
@@ -97,8 +101,21 @@ export class LeaderboardPanel {
   }
 
   private persist(): void {
-    this.storageError = !saveLeaderboard(this.data, this.storage);
+    this.refresh(true);
+    const readError = this.storageError;
+    this.storageError = !saveLeaderboard(this.data, this.storage) || readError;
     this.reportStorageError();
+  }
+
+  private refresh(preservePlayerName = false): void {
+    const previousError = this.storageError;
+    const latest = loadLeaderboard(this.storage);
+    this.data = mergeLeaderboardData(
+      this.data,
+      latest.data,
+      preservePlayerName || previousError || latest.error,
+    );
+    this.storageError = latest.error;
   }
 
   private reportStorageError(): void {
