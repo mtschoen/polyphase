@@ -1,4 +1,5 @@
-import { COLORS, type GameEvent } from './game/types';
+import { getClearTier, type ClearTier } from './clear-tiers';
+import { COLORS, type CellMark, type GameEvent } from './game/types';
 
 interface Particle {
   x: number;
@@ -9,17 +10,20 @@ interface Particle {
   maximumLife: number;
   size: number;
   color: string;
+  dust: boolean;
   shard: boolean;
 }
-interface Ring {
+interface Blast {
   x: number;
   y: number;
   age: number;
-  strength: number;
+  power: number;
+  color: string;
 }
 interface Beam {
   row: number;
   age: number;
+  color: string;
 }
 interface DropTrail {
   x: number;
@@ -33,30 +37,36 @@ export class BoardEffects {
   private canvas = document.createElement('canvas');
   private context: CanvasRenderingContext2D;
   private particles: Particle[] = [];
-  private rings: Ring[] = [];
+  private blasts: Blast[] = [];
   private beams: Beam[] = [];
   private trails: DropTrail[] = [];
   private glows = new Map<string, HTMLCanvasElement>();
-  private shake = 0;
+  private application: HTMLElement;
+  private screenShake = 0;
+  private landingShake = 0;
   private width = 0;
   private height = 0;
 
   constructor(
     private board: HTMLCanvasElement,
     private frame: HTMLElement,
+    private random: () => number = Math.random,
   ) {
+    this.application = frame.closest<HTMLElement>('#app') ?? frame;
     this.canvas.className = 'board-effects';
     this.canvas.setAttribute('aria-hidden', 'true');
     document.body.append(this.canvas);
     this.context = this.canvas.getContext('2d')!;
-    for (const color of COLORS) {
+    const accents = Array.from({ length: 6 }, (_, index) => getClearTier(index + 1).accent);
+    for (const color of [...COLORS, ...accents]) {
+      if (this.glows.has(color)) continue;
       const sprite = document.createElement('canvas');
       sprite.width = sprite.height = 64;
       const context = sprite.getContext('2d')!;
       const glow = context.createRadialGradient(32, 32, 0, 32, 32, 32);
-      glow.addColorStop(0, '#ffffff');
-      glow.addColorStop(0.12, color);
-      glow.addColorStop(0.4, `${color}66`);
+      glow.addColorStop(0, '#fff8e9');
+      glow.addColorStop(0.1, color);
+      glow.addColorStop(0.35, `${color}44`);
       glow.addColorStop(1, `${color}00`);
       context.fillStyle = glow;
       context.fillRect(0, 0, 64, 64);
@@ -66,74 +76,101 @@ export class BoardEffects {
 
   reset(): void {
     this.particles = [];
-    this.rings = [];
+    this.blasts = [];
     this.beams = [];
     this.trails = [];
-    this.shake = 0;
+    this.screenShake = this.landingShake = 0;
     this.frame.style.transform = '';
+    this.application.style.transform = '';
     this.context.clearRect(0, 0, this.width, this.height);
   }
 
   handle(event: GameEvent, width: number): void {
     if (!event.cells?.length || !['drop', 'clear', 'resonance', 'lock'].includes(event.type))
       return;
-    const strength = event.type === 'resonance' ? 4 : event.type === 'clear' ? 2 : 1;
-    const isLock = event.type === 'lock';
-    const count = isLock ? 7 : 14 + strength * 5;
-    this.shake = Math.min(12, this.shake + (isLock ? 0.8 : strength * 2.5));
-    if (event.rows) for (const row of event.rows) this.beams.push({ row, age: 0 });
-    for (const cell of event.cells) {
-      const color = COLORS[cell.color % COLORS.length];
-      for (let index = 0; index < count; index++) {
-        const angle = -Math.PI * (0.05 + Math.random() * 0.9);
-        const speed = (isLock ? 2 : 4) + Math.random() * (3 + strength * 3);
-        const life = (isLock ? 0.65 : 1) + Math.random() * 0.65;
-        this.particles.push({
-          x: cell.x + Math.random(),
-          y: cell.y + 0.5,
-          velocityX: Math.cos(angle) * speed,
-          velocityY: Math.sin(angle) * speed,
-          life,
-          maximumLife: life,
-          size: 0.065 + Math.random() * 0.1,
-          color,
-          shard: index % 3 === 0,
-        });
-      }
+    // Bound work at event ingestion as well as retained particles.
+    const cells = event.cells.slice(0, Math.min(256, Math.max(1, width) * 6));
+    if (event.type === 'drop') {
+      this.addDropTrail(cells, event.distance ?? 0);
+    } else if (event.type === 'lock') {
+      this.landingShake = Math.min(2.5, this.landingShake + 1.6);
+      this.emitParticles(cells, null);
+    } else {
+      const tier = getClearTier(
+        event.type === 'resonance' ? 4 : (event.amount ?? event.rows?.length ?? 1),
+      );
+      this.screenShake = Math.min(36, this.screenShake + tier.shake);
+      this.emitParticles(cells, tier);
+      const rows = event.rows ?? [...new Set(cells.map((cell) => cell.y))];
+      for (const row of rows.slice(0, 24)) this.beams.push({ row, age: 0, color: tier.accent });
+      const centerX = cells.reduce((sum, cell) => sum + cell.x + 0.5, 0) / cells.length;
+      const centerY = cells.reduce((sum, cell) => sum + cell.y + 0.5, 0) / cells.length;
+      this.blasts.push({ x: centerX, y: centerY, age: 0, power: tier.power, color: tier.accent });
     }
-    if (!isLock)
-      this.rings.push({
-        x: event.cells.reduce((sum, cell) => sum + cell.x + 0.5, 0) / event.cells.length,
-        y: Math.max(...event.cells.map((cell) => cell.y)) + 0.5,
-        age: 0,
-        strength,
-      });
-    if (event.type === 'drop' && event.distance) {
-      const columns = new Map(event.cells.map((cell) => [cell.x, cell]));
-      for (const cell of columns.values())
-        this.trails.push({
-          x: cell.x + 0.5,
-          top: cell.y - event.distance,
-          bottom: cell.y + 1,
-          age: 0,
-          color: COLORS[cell.color % COLORS.length],
-        });
-    }
-    const maximumParticles = width * 100;
+    const maximumParticles = Math.min(3000, Math.max(600, width * 180));
     if (this.particles.length > maximumParticles)
       this.particles.splice(0, this.particles.length - maximumParticles);
-    this.rings = this.rings.slice(-16);
+    this.blasts = this.blasts.slice(-12);
     this.beams = this.beams.slice(-24);
     this.trails = this.trails.slice(-28);
   }
 
-  render(delta: number, size: number, reducedMotion: boolean): void {
+  private addDropTrail(cells: CellMark[], distance: number): void {
+    if (distance <= 0) return;
+    const columns = new Map<number, CellMark>();
+    for (const cell of cells) {
+      const previous = columns.get(cell.x);
+      if (!previous || cell.y > previous.y) columns.set(cell.x, cell);
+    }
+    for (const cell of columns.values())
+      this.trails.push({
+        x: cell.x + 0.5,
+        top: cell.y - distance,
+        bottom: cell.y + 1,
+        age: 0,
+        color: COLORS[cell.color % COLORS.length],
+      });
+  }
+
+  private emitParticles(cells: CellMark[], tier: ClearTier | null): void {
+    const count = tier ? tier.particlesPerCell * 2 : 12;
+    for (const cell of cells) {
+      for (let index = 0; index < count; index++) {
+        const angle = tier ? this.random() * Math.PI * 2 : -Math.PI * (0.06 + this.random() * 0.88);
+        const speed = tier ? 3 + this.random() * (7 + tier.power * 3.5) : 1 + this.random() * 3;
+        const ember = tier && index % 9 === 0;
+        const life = tier
+          ? (ember ? 0.65 : 0.28) + this.random() * 0.25
+          : 0.22 + this.random() * 0.23;
+        this.particles.push({
+          x: cell.x + this.random(),
+          y: cell.y + (tier ? this.random() : 0.9),
+          velocityX: Math.cos(angle) * speed,
+          velocityY: Math.sin(angle) * speed,
+          life,
+          maximumLife: life,
+          size: 0.012 + this.random() * (tier ? 0.04 : 0.025),
+          color: tier ? (index % 3 ? COLORS[cell.color % COLORS.length] : tier.accent) : '#99aaa8',
+          dust: !tier,
+          shard: !!tier && index % 5 === 0,
+        });
+      }
+    }
+  }
+
+  render(
+    delta: number,
+    size: number,
+    reducedMotion: boolean,
+    landingGuide: readonly { x: number; y: number }[] = [],
+  ): void {
     const context = this.context;
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     if (
       this.width !== window.innerWidth ||
       this.height !== window.innerHeight ||
-      this.canvas.width !== Math.round(window.innerWidth * ratio)
+      this.canvas.width !== Math.round(window.innerWidth * ratio) ||
+      this.canvas.height !== Math.round(window.innerHeight * ratio)
     ) {
       this.width = window.innerWidth;
       this.height = window.innerHeight;
@@ -146,73 +183,104 @@ export class BoardEffects {
       this.reset();
       return;
     }
-    this.shake *= Math.exp(-15 * delta);
-    this.frame.style.transform =
-      this.shake > 0.1
-        ? `translate3d(${(Math.random() - 0.5) * this.shake}px,${(Math.random() - 0.5) * this.shake}px,0)`
-        : '';
-    if (!this.particles.length && !this.rings.length && !this.beams.length && !this.trails.length)
+    const elapsed = Math.max(0, Number.isFinite(delta) ? delta : 0);
+    this.screenShake *= Math.exp(-11 * elapsed);
+    this.landingShake *= Math.exp(-24 * elapsed);
+    this.application.style.transform = this.shakeTransform(this.screenShake);
+    if (this.application !== this.frame)
+      this.frame.style.transform = this.shakeTransform(this.landingShake);
+    else
+      this.frame.style.transform = this.shakeTransform(
+        Math.max(this.screenShake, this.landingShake),
+      );
+    if (!this.particles.length && !this.blasts.length && !this.beams.length && !this.trails.length)
       return;
     const bounds = this.board.getBoundingClientRect();
     context.save();
     context.translate(bounds.left + this.board.clientLeft, bounds.top + this.board.clientTop);
     context.globalCompositeOperation = 'lighter';
-    this.drawTrails(delta, size);
-    this.drawWaves(delta, size);
-    this.drawParticles(delta, size);
+    this.drawTrails(elapsed, size);
+    this.drawBlasts(elapsed, size);
+    this.drawParticles(elapsed, size);
+    // Remove the overlay over the guide so incoming pieces stay easy to place.
+    context.globalCompositeOperation = 'destination-out';
+    context.globalAlpha = 0.92;
+    const inset = size * 0.035;
+    for (const { x, y } of landingGuide)
+      context.fillRect(x * size + inset, y * size + inset, size - inset * 2, size - inset * 2);
     context.restore();
+  }
+
+  private shakeTransform(amplitude: number): string {
+    return amplitude > 0.1
+      ? `translate3d(${(this.random() - 0.5) * amplitude * 2}px,${(this.random() - 0.5) * amplitude * 2}px,0)`
+      : '';
   }
 
   private drawTrails(delta: number, size: number): void {
     const context = this.context;
     for (const trail of this.trails) {
       trail.age += delta;
-      context.globalAlpha = Math.max(0, 1 - trail.age / 0.32) * 0.65;
+      context.globalAlpha = Math.max(0, 1 - trail.age / 0.22) * 0.4;
       const top = Math.max(0, trail.top) * size;
       const bottom = trail.bottom * size;
       const glow = context.createLinearGradient(0, top, 0, bottom);
       glow.addColorStop(0, `${trail.color}00`);
       glow.addColorStop(1, trail.color);
       context.fillStyle = glow;
-      context.fillRect((trail.x - 0.36) * size, top, size * 0.72, bottom - top);
+      context.fillRect((trail.x - 0.18) * size, top, size * 0.36, bottom - top);
     }
-    this.trails = this.trails.filter((trail) => trail.age < 0.32);
+    this.trails = this.trails.filter((trail) => trail.age < 0.22);
     context.globalAlpha = 1;
   }
 
-  private drawWaves(delta: number, size: number): void {
+  private drawBlasts(delta: number, size: number): void {
     const context = this.context;
     for (const beam of this.beams) {
       beam.age += delta;
-      context.globalAlpha = Math.max(0, 1 - beam.age / 0.5);
-      context.fillStyle = '#baffdf';
-      const thickness = Math.max(2, size * (1 - beam.age * 2));
+      context.globalAlpha = Math.max(0, 1 - beam.age / 0.18) ** 2 * 0.85;
+      context.fillStyle = beam.color;
+      const thickness = Math.max(1, size * 0.18 * (1 - beam.age / 0.18));
       context.fillRect(
-        -size,
+        -size * 2,
         (beam.row + 0.5) * size - thickness / 2,
-        this.board.clientWidth + size * 2,
+        this.board.clientWidth + size * 4,
         thickness,
       );
     }
-    this.beams = this.beams.filter((beam) => beam.age < 0.5);
-    for (const ring of this.rings) {
-      ring.age += delta;
-      context.globalAlpha = Math.max(0, 1 - ring.age / 0.8) * 0.8;
-      context.strokeStyle = '#c3ffe6';
-      context.lineWidth = 1.5 + ring.strength * 0.5;
+    this.beams = this.beams.filter((beam) => beam.age < 0.18);
+    for (const blast of this.blasts) {
+      blast.age += delta;
+      const life = 0.28 + blast.power * 0.03;
+      const opacity = Math.max(0, 1 - blast.age / life);
+      const x = blast.x * size;
+      const y = blast.y * size;
+      if (blast.age < 0.12) {
+        const radius = size * (1.2 + blast.power * 0.7);
+        context.globalAlpha = (1 - blast.age / 0.12) ** 2 * 0.55;
+        context.drawImage(
+          this.glows.get(blast.color)!,
+          x - radius,
+          y - radius,
+          radius * 2,
+          radius * 2,
+        );
+      }
+      context.globalAlpha = opacity * opacity * 0.55;
+      context.strokeStyle = blast.color;
+      context.lineWidth = 0.8 + opacity * blast.power * 0.35;
+      const radius = (0.35 + blast.age * (9 + blast.power * 6)) * size;
       context.beginPath();
-      context.ellipse(
-        ring.x * size,
-        ring.y * size,
-        ring.age * size * 15,
-        ring.age * size * 4,
-        0,
-        0,
-        Math.PI * 2,
-      );
+      context.ellipse(x, y, radius, radius * 0.55, 0, 0, Math.PI * 2);
       context.stroke();
+      if (blast.power >= 3) {
+        context.globalAlpha *= 0.5;
+        context.beginPath();
+        context.ellipse(x, y, radius * 0.72, radius * 0.72, 0, 0, Math.PI * 2);
+        context.stroke();
+      }
     }
-    this.rings = this.rings.filter((ring) => ring.age < 0.8);
+    this.blasts = this.blasts.filter((blast) => blast.age < 0.28 + blast.power * 0.03);
     context.globalAlpha = 1;
   }
 
@@ -223,43 +291,46 @@ export class BoardEffects {
       if (particle.life <= 0) continue;
       particle.x += particle.velocityX * delta;
       particle.y += particle.velocityY * delta;
-      particle.velocityY += delta * 8;
-      particle.velocityX *= Math.exp(-delta * 0.8);
+      particle.velocityY += delta * (particle.dust ? 3 : 8);
+      particle.velocityX *= Math.exp(-delta * (particle.dust ? 3 : 1.8));
       const x = particle.x * size;
       const y = particle.y * size;
-      const radius = Math.max(1.2, particle.size * size);
-      context.globalAlpha = Math.min(1, (particle.life / particle.maximumLife) * 1.8);
-      context.strokeStyle = particle.color;
-      context.lineWidth = Math.max(1, radius * 0.55);
-      context.beginPath();
-      context.moveTo(x - particle.velocityX * size * 0.07, y - particle.velocityY * size * 0.07);
-      context.lineTo(x, y);
-      context.stroke();
-      context.drawImage(
-        this.glows.get(particle.color)!,
-        x - radius * 4,
-        y - radius * 4,
-        radius * 8,
-        radius * 8,
-      );
-      context.fillStyle = '#f5fff9';
+      const radius = Math.max(0.4, Math.min(1.8, particle.size * size));
+      const age = particle.maximumLife - particle.life;
+      context.globalAlpha =
+        (particle.life / particle.maximumLife) ** 2 *
+        (particle.dust ? 0.42 : age < 0.12 ? 0.9 : 0.5);
+      context.fillStyle = particle.color;
+      if (!particle.dust) {
+        context.strokeStyle = particle.color;
+        context.lineWidth = Math.max(0.5, radius * 0.45);
+        context.beginPath();
+        context.moveTo(
+          x - particle.velocityX * size * 0.012,
+          y - particle.velocityY * size * 0.012,
+        );
+        context.lineTo(x, y);
+        context.stroke();
+      }
       if (particle.shard) {
         context.save();
         context.translate(x, y);
-        context.rotate(particle.life * 5);
+        context.rotate(particle.life * 12);
         context.fillRect(-radius / 2, -radius / 2, radius, radius);
         context.restore();
       } else {
         context.beginPath();
-        context.arc(x, y, radius * 0.4, 0, Math.PI * 2);
+        context.arc(x, y, radius * (particle.dust ? 1 : 0.65), 0, Math.PI * 2);
         context.fill();
       }
     }
     this.particles = this.particles.filter((particle) => particle.life > 0);
+    context.globalAlpha = 1;
   }
 
   dispose(): void {
     this.reset();
     this.canvas.remove();
+    this.glows.clear();
   }
 }

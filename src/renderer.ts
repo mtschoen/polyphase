@@ -150,7 +150,12 @@ export class BoardRenderer {
         context.fillRect(0, 0, this.width, size * 7);
       }
     }
-    this.effects.render(delta, size, this.reducedMotion);
+    const piece = game.active;
+    const landingGuide =
+      this.showGhost && piece && game.status !== 'over'
+        ? piece.cells.map(([x, y]) => ({ x: piece.x + x, y: game.ghostY + y }))
+        : [];
+    this.effects.render(delta, size, this.reducedMotion, landingGuide);
   }
   private drawDemo(width: number, height: number, size: number, time: number): void {
     const heights = [3, 4, 4, 2, 2, 3, 5, 4, 2, 3, 3, 2, 4, 3];
