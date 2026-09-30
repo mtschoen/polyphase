@@ -1,5 +1,6 @@
 import type { AudioLane, VoiceOptions } from './audio';
 import type { Mode } from './game/types';
+import { scheduleGroove } from './groove';
 export type SoundtrackMode = Mode | 'monotris' | 'ditris' | 'tritris' | 'tetris';
 const DEFAULT_SIZES: Record<SoundtrackMode, readonly number[]> = {
   monotris: [1],
@@ -376,7 +377,6 @@ export function scheduleStep(
   const chord = chordForStep(mode, sequenceStep, theme, sizes);
   const palette = PALETTES[theme];
   const compound = pieceSize === 6;
-  const secondAccent = compound ? 3 : pieceSize === 5 ? 6 : pieceSize === 4 ? 4 : stepsPerBar;
   const continuous = continuousMelody(mode, sizes);
   const phraseIndex = continuous ? Math.floor(sequenceStep / 10) : bar;
   const phrase = phraseIndex % 16;
@@ -423,45 +423,16 @@ export function scheduleStep(
       }),
     );
   }
-  const accent = stepInBar === 0 || stepInBar === secondAccent;
-  if (accent) {
-    instruments.kick(time, 0.19 + energy * 0.055, 'music');
-    instruments.note(chord[0] - 12, time, stepDuration * (compound ? 2.5 : 1.7), 0.125, 'music', {
-      wave: palette.bassWave,
-      attack: 0.006,
-      release: 0.1,
-      cutoff: 550 + energy * 500,
-    });
-  } else if (stepInBar % 2 === 0 || (compound && stepInBar === 5)) {
-    instruments.note(chord[2] - 12, time, stepDuration * 0.7, 0.065, 'music', {
-      wave: palette.bassWave,
-      attack: 0.005,
-      release: 0.05,
-      cutoff: 600,
-    });
-  }
-  const snare = compound
-    ? stepInBar === 3
-    : pieceSize === 5
-      ? stepInBar === 4 || stepInBar === 8
-      : pieceSize > 1 && (stepInBar === 2 || (pieceSize === 4 && stepInBar === 6));
-  if (snare) {
-    instruments.noise(time, 0.12, 0.048 + energy * 0.025, 1800, 'bandpass', 'music');
-    instruments.note(45, time, 0.08, 0.023, 'music', {
-      attack: 0.002,
-      release: 0.07,
-      targetFrequency: 90,
-    });
-  }
-  instruments.noise(
+  scheduleGroove(
+    instruments,
+    { bar, stepInBar, stepsPerBar, stepDuration, pieceSize },
+    chord,
+    palette.bassWave,
+    energy,
     time,
-    0.035,
-    accent ? 0.023 : 0.011 + energy * 0.009,
-    7200,
-    'highpass',
-    'music',
+    phrase,
   );
-  // A quieter broken-chord answer and pressure-driven sixteenth-note fills.
+  // A quieter broken-chord answer leaves the lead melody in front.
   if (stepInBar % 2 === 1 && (phrase >= 8 || energy > 0.28 || variation === 1)) {
     instruments.note(
       chord[(stepInBar + bar) % 4] + 12,
@@ -478,8 +449,4 @@ export function scheduleStep(
       },
     );
   }
-  if (energy > 0.72)
-    instruments.noise(time + stepDuration / 2, 0.026, 0.013, 8200, 'highpass', 'music');
-  if (phrase % 4 === 3 && stepInBar === stepsPerBar - 1)
-    instruments.noise(time + stepDuration / 2, 0.065, 0.032, 2600, 'bandpass', 'music');
 }
