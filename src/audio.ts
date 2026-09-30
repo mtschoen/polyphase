@@ -44,6 +44,7 @@ const unitInterval = (value: number): number =>
 export class AudioEngine {
   private context?: AudioContext;
   private master?: GainNode;
+  private output?: GainNode;
   private musicBus?: AudioBus;
   private effectBus?: AudioBus;
   private noiseBuffer?: AudioBuffer;
@@ -179,6 +180,7 @@ export class AudioEngine {
     if (context.state !== 'closed') void context.close();
     this.context = undefined;
     this.master = undefined;
+    this.output = undefined;
     this.musicBus = undefined;
     this.effectBus = undefined;
     this.noiseBuffer = undefined;
@@ -195,8 +197,10 @@ export class AudioEngine {
     compressor.ratio.value = 3;
     compressor.attack.value = 0.006;
     compressor.release.value = 0.22;
-    this.master.connect(compressor).connect(context.destination);
-    this.permanentNodes.push(this.master, compressor);
+    this.output = context.createGain();
+    this.output.gain.value = 1.5;
+    this.master.connect(compressor).connect(this.output).connect(context.destination);
+    this.permanentNodes.push(this.master, compressor, this.output);
     this.musicBus = this.createBus(this.playing ? 1 : 0, 0.16);
     this.effectBus = this.createBus(1, 0.31);
     const noiseLength = Math.ceil(context.sampleRate * 3);

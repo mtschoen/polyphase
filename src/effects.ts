@@ -1,6 +1,8 @@
 import { getClearTier, type ClearTier } from './clear-tiers';
 import { COLORS, type CellMark, type GameEvent } from './game/types';
 
+const IMPACT_SCALE = 1.5;
+
 interface Particle {
   x: number;
   y: number;
@@ -95,13 +97,16 @@ export class BoardEffects {
     if (event.type === 'drop') {
       this.addDropTrail(cells, event.distance ?? 0);
     } else if (event.type === 'lock') {
-      this.landingShake = Math.min(2.5, this.landingShake + 1.6);
+      this.landingShake = Math.min(2.5 * IMPACT_SCALE, this.landingShake + 1.6 * IMPACT_SCALE);
       this.emitParticles(cells, null);
     } else {
       const tier = getClearTier(
         event.type === 'resonance' ? 4 : (event.amount ?? event.rows?.length ?? 1),
       );
-      this.screenShake = Math.min(42, this.screenShake + tier.shake * 1.25);
+      this.screenShake = Math.min(
+        42 * IMPACT_SCALE,
+        this.screenShake + tier.shake * 1.25 * IMPACT_SCALE,
+      );
       this.emitParticles(cells, tier);
       const rows = event.rows ?? [...new Set(cells.map((cell) => cell.y))];
       for (const row of rows.slice(0, 24))
@@ -110,7 +115,7 @@ export class BoardEffects {
       const centerY = cells.reduce((sum, cell) => sum + cell.y + 0.5, 0) / cells.length;
       this.blasts.push({ x: centerX, y: centerY, age: 0, power: tier.power, color: tier.accent });
     }
-    const maximumParticles = Math.min(4200, Math.max(800, width * 280));
+    const maximumParticles = Math.round(Math.min(4200, Math.max(800, width * 280)) * IMPACT_SCALE);
     if (this.particles.length > maximumParticles)
       this.particles.splice(0, this.particles.length - maximumParticles);
     this.blasts = this.blasts.slice(-12);
@@ -136,7 +141,7 @@ export class BoardEffects {
   }
 
   private emitParticles(cells: CellMark[], tier: ClearTier | null): void {
-    const count = tier ? tier.particlesPerCell * 3 : 32;
+    const count = Math.round((tier ? tier.particlesPerCell * 3 : 32) * IMPACT_SCALE);
     for (const cell of cells) {
       for (let index = 0; index < count; index++) {
         const dust = !tier && index % 4 === 0;
@@ -232,14 +237,19 @@ export class BoardEffects {
     const context = this.context;
     for (const trail of this.trails) {
       trail.age += delta;
-      context.globalAlpha = Math.max(0, 1 - trail.age / 0.22) * 0.4;
+      context.globalAlpha = Math.max(0, 1 - trail.age / 0.22) * 0.4 * IMPACT_SCALE;
       const top = Math.max(0, trail.top) * size;
       const bottom = trail.bottom * size;
       const glow = context.createLinearGradient(0, top, 0, bottom);
       glow.addColorStop(0, `${trail.color}00`);
       glow.addColorStop(1, trail.color);
       context.fillStyle = glow;
-      context.fillRect((trail.x - 0.18) * size, top, size * 0.36, bottom - top);
+      context.fillRect(
+        (trail.x - 0.18 * IMPACT_SCALE) * size,
+        top,
+        size * 0.36 * IMPACT_SCALE,
+        bottom - top,
+      );
     }
     this.trails = this.trails.filter((trail) => trail.age < 0.22);
     context.globalAlpha = 1;
@@ -253,7 +263,7 @@ export class BoardEffects {
       const opacity = Math.max(0, 1 - beam.age / life);
       context.globalAlpha = opacity;
       context.fillStyle = beam.color;
-      const thickness = Math.max(1, size * (0.28 + beam.power * 0.04) * opacity);
+      const thickness = Math.max(1, size * (0.28 + beam.power * 0.04) * opacity) * IMPACT_SCALE;
       context.fillRect(
         -size * 2,
         (beam.row + 0.5) * size - thickness / 2,
@@ -264,9 +274,9 @@ export class BoardEffects {
       context.globalAlpha = Math.max(0, 1 - beam.age / 0.13) * 0.9;
       context.fillRect(
         -size,
-        (beam.row + 0.5) * size - size * 0.045,
+        (beam.row + 0.5) * size - size * 0.045 * IMPACT_SCALE,
         this.board.clientWidth + size * 2,
-        size * 0.09,
+        size * 0.09 * IMPACT_SCALE,
       );
     }
     this.beams = this.beams.filter((beam) => beam.age < 0.2 + beam.power * 0.016);
@@ -277,7 +287,7 @@ export class BoardEffects {
       const x = blast.x * size;
       const y = blast.y * size;
       if (blast.age < 0.22) {
-        const radius = size * (1.5 + blast.power * 0.9);
+        const radius = size * (1.5 + blast.power * 0.9) * IMPACT_SCALE;
         context.globalAlpha = (1 - blast.age / 0.22) * 0.75;
         context.drawImage(
           this.glows.get(blast.color)!,
@@ -289,8 +299,8 @@ export class BoardEffects {
       }
       context.globalAlpha = opacity ** 1.5 * 0.9;
       context.strokeStyle = blast.color;
-      context.lineWidth = 1 + opacity * blast.power * 0.55;
-      const radius = (0.6 + blast.age * (14 + blast.power * 7)) * size;
+      context.lineWidth = (1 + opacity * blast.power * 0.55) * IMPACT_SCALE;
+      const radius = (0.6 + blast.age * (14 + blast.power * 7)) * size * IMPACT_SCALE;
       context.beginPath();
       context.ellipse(x, y, radius, radius * 0.65, 0, 0, Math.PI * 2);
       context.stroke();
@@ -316,7 +326,7 @@ export class BoardEffects {
       particle.velocityX *= Math.exp(-delta * (particle.dust ? 3 : 1.8));
       const x = particle.x * size;
       const y = particle.y * size;
-      const radius = Math.max(0.4, Math.min(1.8, particle.size * size));
+      const radius = Math.max(0.4, Math.min(1.8, particle.size * size)) * IMPACT_SCALE;
       const age = particle.maximumLife - particle.life;
       context.globalAlpha =
         (particle.life / particle.maximumLife) ** 1.2 *

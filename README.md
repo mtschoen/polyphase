@@ -63,7 +63,7 @@ Mode, pace and Fusion selection are locked during a run. Pause and choose **Back
 
 Each tier has its own original synthesized stinger, increasing sparks, shockwaves and screen shake. A line clear holds back the next piece for 0.36 seconds, plus 0.06 seconds per extra line, up to 0.66 seconds for six. This applies equally in Flow and Rush. Scoring happens immediately; the queue advances after the bright burst fades. Pausing freezes this gap, and taps during it do not accidentally drop or swap the next piece.
 
-Most clear sparks live for roughly half a second, with a few faint embers lasting less than a second. Landing sparks stay small but bright enough to register, and ordinary placements have no entry delay. Larger clears briefly duck the music to give their stinger room.
+Most clear sparks live for roughly half a second, with a few faint embers lasting less than a second. Landing sparks stay small but bright enough to register, and ordinary placements have no entry delay. The impact mix boosts particle count, particle radius, shake and shockwaves by 50%, with a stronger background pulse. Larger clears briefly duck the music to give their stinger room.
 
 Open **Settings → Try explosion** to preview any tier without changing your board or score. **Spoken clear callouts** can be switched off separately; speech is skipped when the browser has no suitable English voice. Mute and master volume also apply to the announcer.
 
@@ -74,6 +74,8 @@ The traditional [Korobeiniki folk melody](https://commons.wikimedia.org/wiki/Fil
 Fusion changes meter at complete bar boundaries. A 3 + 5 + 6 mix cycles through 3/4, 5/4 and 6/4, advancing each size's own short phrase when it returns. The footer shows your selected meters; hover its label for tempo information.
 
 A pitched kick body, deep sub sweep and short click drive every quarter beat. Open offbeat hats, claps, syncopated bass and a centered sine sub add weight. Each kick briefly ducks the melody and stereo echoes, then lets them swell back over 300 milliseconds for a pumping club feel. The drums retain their attack. The three atmospheres change key and timbre; progress increases intensity while the concise hook and stable harmony keep looping.
+
+Music and synthesized effects receive a 50% output boost after compression, including when your saved master volume is already at 100%. The master slider and mute still control the full mix.
 
 Development and verification commands are in [AGENTS.md](AGENTS.md). Test evidence and remaining verification limits are in [TEST-REPORT.md](TEST-REPORT.md).
 

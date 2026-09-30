@@ -11,3 +11,5 @@ An existing compatible Chromium executable can be selected with the `POLYPHASE_B
 - `npm run lint` and `npm run format:check`: static and formatting checks.
 
 The browser harnesses close their isolated browsers. Screenshots and runtime results are written under ignored `artifacts/`. Inspect desktop and mobile screenshots after layout changes. Perceived musical quality and game feel still benefit from human playtesting with headphones.
+
+The media harness also measures final output after compression at 100% master volume. Paired offline renders compare unity output against the production boost for all six sizes and three themes, overlapping opening music with a six-line clear. They verify the 1.5x signal increase and peak headroom without evicting scheduled voices.

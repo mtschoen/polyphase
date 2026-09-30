@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { checkParticles } from './particle-checks.mjs';
 import { checkClearEscalation } from './clear-checks.mjs';
-import { checkClubPump } from './club-checks.mjs';
+import { checkClubPump, checkOutputGain } from './club-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -20,8 +20,8 @@ try {
     const sound = new AudioEngine();
     await sound.start();
     const analyser = sound.context.createAnalyser();
-    sound.master.connect(analyser);
-    sound.setVolume(0.6);
+    sound.output.connect(analyser);
+    sound.setVolume(1);
     sound.setIntensity(0.9);
     sound.setPlaying(true);
     window.mediaProbe = { sound, analyser, samples: new Float32Array(analyser.fftSize), peak: 0 };
@@ -94,6 +94,7 @@ try {
   const effects = await checkParticles(page);
   const clearEscalation = await checkClearEscalation(page);
   const clubPump = await checkClubPump(page);
+  const outputGain = await checkOutputGain(page);
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify(
@@ -105,6 +106,7 @@ try {
         effects,
         clearEscalation,
         clubPump,
+        outputGain,
         browserErrors: errors,
       },
       null,

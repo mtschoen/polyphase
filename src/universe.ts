@@ -145,9 +145,9 @@ export class Universe {
   burst(strength: number): void {
     if (this.reducedMotion || this.disposed) return;
     this.burstAmount = MathUtils.clamp(
-      this.burstAmount + MathUtils.clamp(strength, 0, 1.5) * 0.75,
+      this.burstAmount + MathUtils.clamp(strength, 0, 1.5) * 1.125,
       0,
-      1,
+      1.5,
     );
   }
 

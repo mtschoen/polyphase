@@ -111,7 +111,7 @@ describe('clear and landing effects', () => {
     const bright = () =>
       paint.filter((mark) => mark.kind === 'core' && mark.color === COLORS[0] && mark.alpha > 0.3);
     expect(bright().length).toBeGreaterThanOrEqual(12);
-    expect(bright().every((mark) => mark.radius <= 1.8)).toBe(true);
+    expect(bright().every((mark) => mark.radius <= 2.7)).toBe(true);
     paint.length = 0;
     effects.render(0.1, 30, false);
     expect(bright().length).toBeGreaterThanOrEqual(12);
