@@ -9,6 +9,7 @@ import {
 } from './score';
 import type { SoundtrackMode } from './score';
 import { scheduleEffect } from './sound-effects';
+import { scheduleClubKick, scheduleMusicPump } from './club-kick';
 import type { SoundEffect } from './sound-effects';
 export { SOUNDTRACKS, soundtrackForSizes } from './score';
 export type AudioLane = 'music' | 'effect';
@@ -17,6 +18,7 @@ interface AudioBus {
   dry: GainNode;
   send: GainNode;
   output: GainNode;
+  pump: GainNode;
 }
 
 export interface VoiceOptions {
@@ -73,6 +75,7 @@ export class AudioEngine {
     this.playing = playing;
     if (!this.context || !this.musicBus) return;
     const time = this.context.currentTime;
+    this.resetPump();
     this.ramp(this.musicBus.output.gain, playing ? 1 : 0, playing ? 0.12 : 0.035);
     if (playing) {
       // Re-enter at a whole bar instead of replaying notes missed while paused.
@@ -86,11 +89,13 @@ export class AudioEngine {
 
   setMuted(muted: boolean): void {
     this.muted = muted;
+    this.resetPump();
     if (this.master) this.ramp(this.master.gain, muted ? 0 : this.volume, 0.025);
   }
 
   setVolume(volume: number): void {
     this.volume = unitInterval(volume);
+    this.resetPump();
     if (this.master) this.ramp(this.master.gain, this.muted ? 0 : this.volume, 0.04);
   }
 
@@ -106,7 +111,7 @@ export class AudioEngine {
     this.restartPhrase();
   }
 
-  /** Cycle chosen sizes on whole bars: 1..5 use n/4, six uses compound 6/8. */
+  /** Cycle chosen sizes on complete bars, following each mode's meter. */
   setPieceSizes(sizes: readonly number[]): void {
     if (this.disposed) return;
     const selected = normalizeMusicSizes(sizes);
@@ -117,6 +122,7 @@ export class AudioEngine {
 
   private restartPhrase(): void {
     this.sequenceStep = 0;
+    this.resetPump();
     if (this.context && this.playing) {
       this.stopVoices('music', this.context.currentTime);
       this.nextNoteTime = this.context.currentTime + 0.06;
@@ -127,11 +133,7 @@ export class AudioEngine {
     const nextTheme = Math.round(unitInterval(theme / 2) * 2);
     if (this.theme === nextTheme) return;
     this.theme = nextTheme;
-    this.sequenceStep = 0;
-    if (this.context && this.playing) {
-      this.stopVoices('music', this.context.currentTime);
-      this.nextNoteTime = this.context.currentTime + 0.06;
-    }
+    this.restartPhrase();
   }
 
   effect(type: SoundEffect, amount = 1): void {
@@ -163,6 +165,7 @@ export class AudioEngine {
     if (this.disposed) return;
     this.disposed = true;
     this.stopScheduler();
+    this.resetPump();
     const context = this.context;
     if (!context) return;
     for (const [source, voice] of this.voices) {
@@ -207,9 +210,11 @@ export class AudioEngine {
     const dry = context.createGain();
     const send = context.createGain();
     const output = context.createGain();
+    const pump = context.createGain();
+    pump.gain.value = 1;
     output.gain.value = volume;
     send.gain.value = echoVolume;
-    dry.connect(output);
+    dry.connect(pump).connect(output);
     output.connect(this.master!);
     const left = context.createDelay(2);
     const right = context.createDelay(2);
@@ -225,14 +230,15 @@ export class AudioEngine {
     const leftFeedback = context.createGain();
     const rightFeedback = context.createGain();
     leftFeedback.gain.value = rightFeedback.gain.value = 0.23;
-    send.connect(left).connect(leftFilter).connect(leftPanner).connect(output);
-    send.connect(right).connect(rightFilter).connect(rightPanner).connect(output);
+    send.connect(left).connect(leftFilter).connect(leftPanner).connect(pump);
+    send.connect(right).connect(rightFilter).connect(rightPanner).connect(pump);
     leftFilter.connect(leftFeedback).connect(right);
     rightFilter.connect(rightFeedback).connect(left);
     this.permanentNodes.push(
       dry,
       send,
       output,
+      pump,
       left,
       right,
       leftFilter,
@@ -242,7 +248,7 @@ export class AudioEngine {
       leftFeedback,
       rightFeedback,
     );
-    return { dry, send, output };
+    return { dry, send, output, pump };
   }
 
   private startScheduler(): void {
@@ -264,6 +270,7 @@ export class AudioEngine {
     if (this.nextNoteTime < time - 0.1) {
       // Background throttling must not turn elapsed time into a burst of queued notes.
       this.stopVoices('music', time);
+      this.resetPump();
       this.sequenceStep -= scorePosition(this.mode, this.sequenceStep, this.pieceSizes).stepInBar;
       this.nextNoteTime = time + 0.03;
     }
@@ -297,6 +304,7 @@ export class AudioEngine {
     volume: number,
     lane: AudioLane,
     options: VoiceOptions = {},
+    percussion = false,
   ): void {
     const context = this.context!;
     const source = context.createOscillator();
@@ -320,10 +328,25 @@ export class AudioEngine {
     const panner = context.createStereoPanner();
     panner.pan.value = options.pan ?? 0;
     source.connect(filter).connect(envelope).connect(panner);
-    this.connectVoice(source, envelope, [filter, envelope, panner], panner, lane, time, duration);
+    this.connectVoice(
+      source,
+      envelope,
+      [filter, envelope, panner],
+      panner,
+      lane,
+      time,
+      duration,
+      percussion,
+    );
   }
 
   private kick(time: number, volume: number, lane: AudioLane): void {
+    if (lane === 'music') {
+      if (this.playing && !this.muted && this.volume > 0)
+        scheduleMusicPump(this.musicBus!.pump.gain, time);
+      scheduleClubKick({ note: this.note.bind(this), noise: this.noise.bind(this) }, time, volume);
+      return;
+    }
     this.note(52, time, 0.32, volume, lane, {
       targetFrequency: 42,
       attack: 0.003,
@@ -358,7 +381,16 @@ export class AudioEngine {
       duration * 0.75,
     );
     source.connect(filter).connect(envelope);
-    this.connectVoice(source, envelope, [filter, envelope], envelope, lane, time, duration);
+    this.connectVoice(
+      source,
+      envelope,
+      [filter, envelope],
+      envelope,
+      lane,
+      time,
+      duration,
+      lane === 'music',
+    );
   }
 
   private createEnvelope(
@@ -385,6 +417,7 @@ export class AudioEngine {
     lane: AudioLane,
     time: number,
     duration: number,
+    percussion = false,
   ): void {
     // Retire the oldest voice within the same lane during rapid input or repeated previews.
     const maximumVoices = lane === 'effect' ? 40 : 48;
@@ -398,8 +431,12 @@ export class AudioEngine {
       this.voices.delete(oldestSource);
     }
     const bus = lane === 'music' ? this.musicBus! : this.effectBus!;
-    output.connect(bus.dry);
-    output.connect(bus.send);
+    if (lane === 'music' && percussion) {
+      output.connect(bus.output);
+    } else {
+      output.connect(bus.dry);
+      output.connect(bus.send);
+    }
     this.voices.set(source, { lane, envelope, nodes });
     source.onended = () => {
       source.disconnect();
@@ -426,5 +463,12 @@ export class AudioEngine {
     parameter.cancelScheduledValues(time);
     parameter.setValueAtTime(parameter.value, time);
     parameter.linearRampToValueAtTime(value, time + duration);
+  }
+
+  private resetPump(): void {
+    if (!this.context || !this.musicBus?.pump) return;
+    const gain = this.musicBus.pump.gain;
+    gain.cancelScheduledValues(this.context.currentTime);
+    gain.setValueAtTime(1, this.context.currentTime);
   }
 }
