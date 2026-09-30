@@ -1,11 +1,11 @@
 #juice-lab {
   position: fixed;
   z-index: 30;
-  top: 16px;
+  top: 80px;
   right: 16px;
   width: 290px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 96px);
   overflow-y: auto;
   padding: 22px;
   color: #e7f2ec;

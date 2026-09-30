@@ -78,7 +78,12 @@ export class JuiceLab {
   }
 
   private detectUnlock = (event: KeyboardEvent): void => {
-    if (!this.panel.hidden && event.code === 'Escape') {
+    if (
+      !this.panel.hidden &&
+      event.code === 'Escape' &&
+      (!document.querySelector('dialog[open]') ||
+        (event.target instanceof Node && this.panel.contains(event.target)))
+    ) {
       event.preventDefault();
       event.stopImmediatePropagation();
       this.close();
