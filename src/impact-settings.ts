@@ -4,30 +4,38 @@ export interface ImpactSettings {
   screenShake: number;
 }
 
-export const DEFAULT_IMPACT_SETTINGS: ImpactSettings = {
-  particleDensity: 1.5,
-  particleSize: 1,
-  screenShake: 1.25,
+// Keep stored/rendered multipliers absolute so recalibrating the labels preserves saved mixes.
+export const DEFAULT_IMPACT_SETTINGS: Readonly<ImpactSettings> = {
+  particleDensity: 0.6,
+  particleSize: 0.6,
+  screenShake: 1.75,
 };
+
+export const IMPACT_PERCENT_RANGE = { minimum: 0, maximum: 300, step: 5 } as const;
 
 export const IMPACT_CONTROLS: readonly {
   key: keyof ImpactSettings;
   label: string;
-  minimum: number;
-  maximum: number;
-  step: number;
 }[] = [
-  { key: 'particleDensity', label: 'Particle density', minimum: 0, maximum: 4, step: 0.1 },
-  { key: 'particleSize', label: 'Particle size', minimum: 0.25, maximum: 2.5, step: 0.05 },
-  { key: 'screenShake', label: 'Screen shake', minimum: 0, maximum: 3, step: 0.05 },
+  { key: 'particleDensity', label: 'Particle density' },
+  { key: 'particleSize', label: 'Particle size' },
+  { key: 'screenShake', label: 'Screen shake' },
 ];
+
+export function impactValue(key: keyof ImpactSettings, percent: number): number {
+  return (DEFAULT_IMPACT_SETTINGS[key] * percent) / 100;
+}
+
+export function impactPercent(key: keyof ImpactSettings, value: number): number {
+  return Math.round((value / DEFAULT_IMPACT_SETTINGS[key]) * 100);
+}
 
 export function normalizeImpactSettings(value: Partial<ImpactSettings>): ImpactSettings {
   const result = { ...DEFAULT_IMPACT_SETTINGS };
-  for (const { key, minimum, maximum } of IMPACT_CONTROLS) {
+  for (const { key } of IMPACT_CONTROLS) {
     const setting = value[key];
     if (typeof setting === 'number' && Number.isFinite(setting))
-      result[key] = Math.min(maximum, Math.max(minimum, setting));
+      result[key] = Math.min(impactValue(key, IMPACT_PERCENT_RANGE.maximum), Math.max(0, setting));
   }
   return result;
 }
