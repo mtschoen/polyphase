@@ -4,16 +4,13 @@ import {
   scorePosition,
   defaultMusicSizes,
   normalizeMusicSizes,
-  PAD_PANNING,
   frequencyForNote,
-  MELODY_WAVE,
   scheduleStep,
 } from './score';
 import type { SoundtrackMode } from './score';
+import { scheduleEffect } from './sound-effects';
+import type { SoundEffect } from './sound-effects';
 export { SOUNDTRACKS, soundtrackForSizes } from './score';
-
-type SoundEffect =
-  'move' | 'rotate' | 'drop' | 'lock' | 'clear' | 'hold' | 'resonance' | 'gameover' | 'level';
 export type AudioLane = 'music' | 'effect';
 
 interface AudioBus {
@@ -143,78 +140,22 @@ export class AudioEngine {
       return;
     const time = context.currentTime + 0.005;
     const chord = this.currentChord();
-    const strength = Number.isFinite(amount) ? Math.min(4, Math.max(1, amount)) : 1;
     if (type === 'move' || type === 'rotate') {
       if (time - this.lastInteractionTime < 0.035) return;
       this.lastInteractionTime = time;
     }
-    switch (type) {
-      case 'move':
-        this.note(chord[2] + 12, time, 0.075, 0.022, 'effect', { pan: -0.2, cutoff: 1700 });
-        break;
-      case 'rotate':
-        this.note(chord[3] + 12, time, 0.13, 0.026, 'effect', {
-          wave: MELODY_WAVE,
-          pan: 0.25,
-          cutoff: 2400,
-          targetFrequency: frequencyForNote(chord[3] + 14),
-        });
-        break;
-      case 'drop':
-        this.kick(time, 0.23, 'effect');
-        this.noise(time, 0.09, 0.045, 650, 'bandpass', 'effect');
-        break;
-      case 'lock':
-        this.note(chord[0] - 12, time, 0.17, 0.075, 'effect', { wave: MELODY_WAVE, cutoff: 480 });
-        break;
-      case 'hold':
-        this.note(chord[1] + 12, time, 0.22, 0.036, 'effect', { pan: -0.3 });
-        this.note(chord[2] + 12, time + 0.06, 0.3, 0.032, 'effect', { pan: 0.3 });
-        break;
-      case 'clear':
-        chord.forEach((note, index) => {
-          this.note(note + 12, time + index * 0.045, 0.72 + strength * 0.1, 0.04, 'effect', {
-            wave: MELODY_WAVE,
-            pan: PAD_PANNING[index],
-            cutoff: 4500,
-            release: 0.65,
-          });
-        });
-        this.note(chord[3] + 24, time + 0.17, 1.15, 0.022 + strength * 0.004, 'effect', {
-          pan: 0.5,
-        });
-        break;
-      case 'level':
-        [...chord, chord[0] + 12].forEach((note, index) =>
-          this.note(note + 12, time + index * 0.11, 0.9, 0.042, 'effect', {
-            pan: index * 0.25 - 0.5,
-          }),
-        );
-        break;
-      case 'resonance':
-        this.noise(time, 2.4, 0.14, 260, 'bandpass', 'effect', 8500);
-        this.note(chord[0] - 12, time, 2.4, 0.13, 'effect', { attack: 0.1, release: 1.5 });
-        chord.forEach((note, index) => {
-          this.note(note + 12, time + 0.12 * index, 2.5, 0.052, 'effect', {
-            wave: MELODY_WAVE,
-            attack: 0.18,
-            release: 1.6,
-            pan: PAD_PANNING[index],
-            cutoff: 4200,
-          });
-          this.note(note + 24, time + 0.5 + 0.08 * index, 1.8, 0.024, 'effect', {
-            pan: -PAD_PANNING[index],
-          });
-        });
-        break;
-      case 'gameover':
-        [chord[3], chord[2], chord[1], chord[0]].forEach((note, index) =>
-          this.note(note, time + index * 0.18, 1.6, 0.06, 'effect', {
-            wave: MELODY_WAVE,
-            cutoff: 1100,
-          }),
-        );
-        break;
+    const duckDuration = scheduleEffect(
+      { note: this.note.bind(this), kick: this.kick.bind(this), noise: this.noise.bind(this) },
+      type,
+      chord,
+      time,
+      amount,
+    );
+    if (duckDuration && this.playing && this.musicBus) {
+      const gain = this.musicBus.output.gain;
+      this.ramp(gain, 0.6, 0.025);
+      gain.setValueAtTime(0.6, time + duckDuration);
+      gain.linearRampToValueAtTime(1, time + duckDuration + 0.18);
     }
   }
 
@@ -413,7 +354,7 @@ export class AudioEngine {
       time,
       duration,
       volume,
-      targetFrequency ? 0.24 : 0.003,
+      targetFrequency ? Math.min(0.24, duration * 0.3) : 0.003,
       duration * 0.75,
     );
     source.connect(filter).connect(envelope);
@@ -445,6 +386,17 @@ export class AudioEngine {
     time: number,
     duration: number,
   ): void {
+    // Retire the oldest voice within the same lane during rapid input or repeated previews.
+    const maximumVoices = lane === 'effect' ? 40 : 48;
+    const laneVoices = [...this.voices].filter(([, voice]) => voice.lane === lane);
+    if (laneVoices.length >= maximumVoices) {
+      const [oldestSource, oldestVoice] = laneVoices[0];
+      const now = this.context!.currentTime;
+      oldestVoice.envelope.gain.cancelScheduledValues(now);
+      oldestVoice.envelope.gain.setTargetAtTime(0, now, 0.005);
+      oldestSource.stop(now + 0.025);
+      this.voices.delete(oldestSource);
+    }
     const bus = lane === 'music' ? this.musicBus! : this.effectBus!;
     output.connect(bus.dry);
     output.connect(bus.send);
