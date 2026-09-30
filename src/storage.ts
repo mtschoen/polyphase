@@ -7,14 +7,16 @@ export interface Settings {
   ghost: boolean;
   theme: number;
   fusionSizes: PieceSize[];
+  announcer: boolean;
 }
 const defaults: Settings = {
   volume: 0.6,
   muted: false,
-  reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  reducedMotion: false,
   ghost: true,
   theme: 0,
   fusionSizes: [5, 6],
+  announcer: true,
 };
 export function loadSettings(): Settings {
   try {
@@ -41,6 +43,7 @@ export function loadSettings(): Settings {
           ? value.theme
           : 0,
       fusionSizes: fusionSizes.length ? fusionSizes : [...defaults.fusionSizes],
+      announcer: typeof value.announcer === 'boolean' ? value.announcer : defaults.announcer,
     };
   } catch {
     return { ...defaults, fusionSizes: [...defaults.fusionSizes] };

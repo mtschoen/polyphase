@@ -27,12 +27,12 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 ## Feel every placement
 
 - Luminous beveled blocks, landing guide, hold slot and four upcoming pieces.
-- Bright sparks, glowing trails and rotating shards on every placement. Hard drops, clearing beams and shockwaves burst beyond the board edges.
+- Fine, fast-fading sparks, short drop trails and a small dust puff on landing. Clear beams and shockwaves burst beyond the board edges, with stronger screen shake for bigger clears. The landing guide stays readable through the effects.
 - A GPU-rendered orbital halo, moving aurora, stars and drifting geometry.
 - Three atmospheres: Eventide, Afterglow and Deep Blue, with matching original musical palettes.
 - Procedural stereo music with a recognizable folk lead, bass, percussion, countermelody and harmonized effects. Intensity responds to progress, combos and charge.
 - Touch controls, fullscreen, local personal bests for each mode/pace, automatic pause when focus is lost, and reduced motion.
-- Fonts, graphics and sound are local. No account, analytics, samples or runtime downloads.
+- Fonts, graphics and synthesized music and effects are bundled. No account, analytics or sampled recordings. Optional spoken callouts use an available browser voice.
 
 ## Controls
 
@@ -48,13 +48,28 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 | Pause / resume          | P or Escape           |
 | Mute / fullscreen       | M / F                 |
 
-Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Reduced Motion suppresses animated particles and shake.
+Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** is an opt-in setting that suppresses animated particles and shake; an explicitly saved choice is respected. The **FULL FX / CALM FX** button below the board toggles it directly.
+
+## Make some noise
+
+| Lines | Callout         |
+| ----- | --------------- |
+| 1     | POP!            |
+| 2     | DOUBLE TROUBLE! |
+| 3     | TRIPLE THREAT!  |
+| 4     | QUAD QUAKE!     |
+| 5     | PENTACLYSM!     |
+| 6     | HEXAGEDDON!     |
+
+Each tier has its own original synthesized stinger, increasing sparks, shockwaves and screen shake. Most clear sparks live for roughly half a second, with a few faint embers lasting less than a second. Landing dust is softer and shorter. Larger clears briefly duck the music to give their stinger room.
+
+Open **Settings → Try explosion** to preview any tier without changing your board or score. **Spoken clear callouts** can be switched off separately; speech is skipped when the browser has no suitable English voice. Mute and master volume also apply to the announcer.
 
 ## Familiar melody, unfamiliar steps
 
 The traditional [Korobeiniki folk melody](https://commons.wikimedia.org/wiki/File:Korobeiniki.svg) is arranged anew for this game. Pentris has a 5/4 pulse grouped 3+2 at 132 quarter notes per minute. Sextris swings in 6/8 at 96 dotted quarters per minute. Sizes one through four use their corresponding quarter-note meters. Fusion cycles the selected meters at complete bar boundaries, so a 3 + 5 + 6 mix moves through 3/4, 5/4 and 6/8 while the melody continues.
 
-The three atmospheres change key and timbre. Progress adds octave lifts, rhythmic fills and a broken-chord answer. The footer shows the selected meters; hover its label for tempo information.
+The three atmospheres change key and timbre. A strong kick, open offbeat hats, syncopated bass and layered claps drive the track from the start. Simple meters kick on every quarter; 6/8 keeps its two dotted-quarter pulses. Progress adds octave lifts, rhythmic fills and a broken-chord answer. The footer shows the selected meters; hover its label for tempo information.
 
 Development and verification commands are in [AGENTS.md](AGENTS.md). Test evidence and remaining verification limits are in [TEST-REPORT.md](TEST-REPORT.md).
 

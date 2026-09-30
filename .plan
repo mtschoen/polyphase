@@ -10,3 +10,5 @@ Technology: Vite, TypeScript, Three.js, Vitest, ESLint, Prettier.
 - [x] Interface: responsive UI, Canvas pieces and unclipped particles, shake, previews, seven modes and Fusion size mixer, settings, pause/restart, separate mix records, touch.
 - [x] Integration: review lanes; build, lint, one full suite, aislop, browser playthroughs and screenshots.
 - [x] Documentation: README, build instructions, TEST-REPORT and launcher; leave a runnable local server.
+- [x] Clear feedback: six shared tiers, short fine particles, landing dust, escalating shake/stingers, optional voice, guide masking and score-safe previews. Full effects by default.
+- [x] Dance groove: stronger kicks, offbeat hats, syncopated bass and claps without changing the approved melody, meters or tempos. Independent review and native audio smoke.

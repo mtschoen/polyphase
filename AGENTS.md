@@ -14,7 +14,8 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 ## Architecture
 
 - `src/game/`: deterministic rules, polyomino generation, and shared types.
-- `src/audio.ts`, `src/score.ts`: Web Audio synthesis, sound effects and original musical composition.
+- `src/audio.ts`, `src/score.ts`, `src/groove.ts`: Web Audio synthesis, original musical composition and percussion/bass arrangement.
+- `src/clear-tiers.ts`, `src/feedback.ts`, `src/sound-effects.ts`, `src/announcer.ts`: shared clear tiers, coordinated feedback, synthesized stingers and optional browser speech.
 - `src/universe.ts`: Three.js animated cosmic environment.
 - `src/renderer.ts`, `src/effects.ts`: board drawing and unclipped gameplay particles.
 - `src/main.ts`, `src/interface.ts`, `src/input.ts`, `src/storage.ts`: UI, controls, persistence and game loop.

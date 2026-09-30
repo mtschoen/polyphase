@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { checkParticles } from './particle-checks.mjs';
+import { checkClearEscalation } from './clear-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -90,6 +91,7 @@ try {
     window.mediaProbe.analyser.disconnect();
   });
   const effects = await checkParticles(page);
+  const clearEscalation = await checkClearEscalation(page);
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify(
@@ -99,6 +101,7 @@ try {
         mutedSilence: true,
         effectsProducedAudio: true,
         effects,
+        clearEscalation,
         browserErrors: errors,
       },
       null,

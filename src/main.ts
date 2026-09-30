@@ -14,6 +14,8 @@ import { BoardRenderer, drawPreview } from './renderer';
 import { createInterface, renderOverlay, setText } from './interface';
 import { InputController } from './input';
 import { loadSettings, saveSettings, readBest, saveBest } from './storage';
+import { Announcer } from './announcer';
+import { GameFeedback } from './feedback';
 
 createInterface();
 const element = <T extends Element = HTMLElement>(selector: string): T =>
@@ -25,10 +27,11 @@ let game = new GameEngine(mode, difficulty, Math.random, settings.fusionSizes);
 const audio = new AudioEngine();
 const universe = new Universe(element<HTMLCanvasElement>('#universe'));
 const renderer = new BoardRenderer(element<HTMLCanvasElement>('#board'), element('#board-frame'));
+const announcer = new Announcer();
+const feedback = new GameFeedback(renderer, universe, audio, announcer);
 let previousStatus: GameStatus | undefined;
 let previousPreviews = '';
 let best = readBest(game.recordKey, difficulty);
-let calloutUntil = 0;
 let toastTimer = 0;
 let starting = false;
 let savedScore = -1;
@@ -46,6 +49,9 @@ function applySettings(): void {
   audio.setVolume(settings.volume);
   audio.setMuted(settings.muted);
   audio.setTheme(settings.theme);
+  announcer.setEnabled(settings.announcer);
+  announcer.setMuted(settings.muted);
+  announcer.setVolume(settings.volume);
   universe.setTheme(settings.theme);
   universe.setReducedMotion(settings.reducedMotion);
   renderer.reducedMotion = settings.reducedMotion;
@@ -57,6 +63,12 @@ function applySettings(): void {
   element('#mute').setAttribute('aria-label', settings.muted ? 'Unmute sound' : 'Mute sound');
   element<HTMLInputElement>('#volume').value = String(Math.round(settings.volume * 100));
   element<HTMLInputElement>('#reduced-motion').checked = settings.reducedMotion;
+  element<HTMLInputElement>('#announcer').checked = settings.announcer;
+  setText('#effects-mode', settings.reducedMotion ? 'CALM FX' : 'FULL FX');
+  element('#effects-mode').setAttribute(
+    'aria-label',
+    settings.reducedMotion ? 'Enable full effects' : 'Use reduced effects',
+  );
   element<HTMLInputElement>('#ghost').checked = settings.ghost;
   setText('#volume-value', `${Math.round(settings.volume * 100)}%`);
   updateTrack();
@@ -103,6 +115,7 @@ async function start(): Promise<void> {
     toast('Audio is unavailable. You can still enjoy the game.');
   }
   game.start();
+  feedback.reset();
   renderer.reset();
   input.clear();
   savedScore = -1;
@@ -119,6 +132,7 @@ function pause(): void {
 }
 function menu(): void {
   input.clear();
+  feedback.reset();
   game = new GameEngine(mode, difficulty, Math.random, settings.fusionSizes);
   audio.setMode(mode);
   audio.setPieceSizes(game.pieceSizes);
@@ -160,6 +174,7 @@ function syncStatus(): void {
   previousStatus = game.status;
   renderOverlay(game.status, game.score);
   audio.setPlaying(game.status === 'playing');
+  if (game.status !== 'playing') announcer.cancel();
   document.body.classList.toggle('playing', game.status === 'playing' && !settings.muted);
   setText(
     '#game-state',
@@ -293,6 +308,28 @@ element('#reduced-motion').addEventListener('change', () => {
   applySettings();
   persistSettings();
 });
+element('#effects-mode').addEventListener('click', () => {
+  settings.reducedMotion = !settings.reducedMotion;
+  applySettings();
+  persistSettings();
+});
+element('#announcer').addEventListener('change', () => {
+  settings.announcer = element<HTMLInputElement>('#announcer').checked;
+  applySettings();
+  persistSettings();
+});
+element('#preview-effects').addEventListener('click', async () => {
+  const lines = Number(element<HTMLSelectElement>('#preview-clear').value);
+  element<HTMLDialogElement>('#settings-dialog').close();
+  try {
+    await audio.start();
+  } catch {
+    toast('Audio is unavailable; showing the visual preview.');
+  }
+  renderer.reset();
+  feedback.reset();
+  feedback.preview(lines, game.width, game.height, performance.now());
+});
 element('#ghost').addEventListener('change', () => {
   settings.ghost = element<HTMLInputElement>('#ghost').checked;
   applySettings();
@@ -319,6 +356,7 @@ window.addEventListener('pagehide', (event) => {
   audio.dispose();
   universe.dispose();
   renderer.dispose();
+  announcer.dispose();
 });
 applySettings();
 syncFusionOptions();
@@ -330,25 +368,7 @@ function frame(now: number): void {
   input.update(delta);
   game.update(delta);
   const intensity = Math.min(1, (game.level - 1) * 0.1 + game.charge * 0.003 + game.combo * 0.05);
-  for (const event of game.drainEvents()) {
-    renderer.handle(event, game.width);
-    audio.effect(event.type, event.amount || event.distance);
-    if (event.type === 'clear' || event.type === 'resonance' || event.type === 'level') {
-      universe.burst(event.type === 'resonance' ? 1 : 0.3 + (event.amount || 1) * 0.1);
-      const labels = ['', 'HARMONY', 'DOUBLE', 'TRIPLE', 'QUADRUPLE', 'PENTACLEAR', 'HEXACLEAR'];
-      setText(
-        '#callout',
-        event.type === 'resonance'
-          ? 'RESONANCE'
-          : event.type === 'level'
-            ? 'LEVEL UP'
-            : labels[Math.min(event.amount || 1, 6)],
-      );
-      element('#callout').classList.add('visible');
-      calloutUntil = now + 1300;
-    }
-  }
-  if (now > calloutUntil) element('#callout').classList.remove('visible');
+  feedback.handle(game.drainEvents(), game.width, now, game.status === 'playing');
   audio.setIntensity(intensity);
   universe.update(now / 1000, delta, game.status === 'playing' ? intensity : 0);
   renderer.render(game, delta, now / 1000);

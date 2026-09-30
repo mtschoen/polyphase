@@ -5,8 +5,8 @@ Run `npm run build` and start `npm run dev` in a second terminal. Browser checks
 On a fresh development machine, install the test browser with `npx playwright install chromium`.
 An existing compatible Chromium executable can be selected with the `POLYPHASE_BROWSER` environment variable.
 
-- `node tests/browser-smoke.mjs`: GPU startup, focused-button keyboard behavior, retained page lifecycle, all seven game modes, custom 3+5+6 Fusion, nonempty selection, movement/rotation/hold/drop, pause/resume, top-out, separate mix records, settings persistence and mobile controls.
-- `node tests/media-smoke.mjs`: native Web Audio output for every pure meter and a custom mix; mute silence and theme/effect graph exercise. The particle helper checks isolated lock, clear and Resonance bursts, particles escaping beyond the board after shockwaves expire, visible layering, expiration, reset, disposal and reduced motion. Inspect composited screenshots as well as canvas pixels.
+- `node tests/browser-smoke.mjs`: full effects by default even with an OS reduced-motion preference, all six named previews without score changes, GPU startup, focused-button keyboard behavior, retained page lifecycle, all seven game modes, custom 3+5+6 Fusion, nonempty selection, movement/rotation/hold/drop, pause/resume, top-out, separate mix records, settings persistence and mobile controls. This includes sound and speech previews.
+- `node tests/media-smoke.mjs`: native Web Audio output for every pure meter and a custom mix; mute silence and theme/effect graph exercise. The particle helper checks early landing dust, drop trails, isolated clear and Resonance bursts, visible layering, expiration, reset, disposal and reduced motion. Real legal one-through-six-line clears exercise increasing bursts beyond the well, tier labels, audio cue routing and expiry. Same-frame level changes cannot overwrite the clear, and paused gameplay does not announce pending clears. Inspect composited screenshots as well as canvas pixels.
 - `npm run coverage`: deterministic rules tests and honest full-source unit coverage.
 - `npm run lint` and `npm run format:check`: static and formatting checks.
 

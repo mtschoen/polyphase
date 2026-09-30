@@ -8,6 +8,7 @@ const browser = await chromium.launch({
   executablePath: process.env.POLYPHASE_BROWSER,
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+await page.emulateMedia({ reducedMotion: 'reduce' });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (message) => {
@@ -18,7 +19,34 @@ const checks = [];
 try {
   await page.goto('http://127.0.0.1:5173');
   await page.getByRole('button', { name: 'Enter the flow' }).waitFor();
+  assert.equal(
+    await page.locator('body').evaluate((body) => body.classList.contains('reduced-motion')),
+    false,
+    'Fresh settings use full effects even when the OS prefers reduced motion',
+  );
+  assert.equal(await page.locator('#effects-mode').textContent(), 'FULL FX');
   assert.equal(await page.locator('#universe').getAttribute('data-universe-status'), 'ready');
+  const clearNames = [
+    'POP!',
+    'DOUBLE TROUBLE!',
+    'TRIPLE THREAT!',
+    'QUAD QUAKE!',
+    'PENTACLYSM!',
+    'HEXAGEDDON!',
+  ];
+  for (const [index, name] of clearNames.entries()) {
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.locator('#preview-clear').selectOption(String(index + 1));
+    await page.getByRole('button', { name: 'Try explosion', exact: true }).click();
+    await page.waitForFunction(
+      (label) => document.querySelector('#callout strong')?.textContent === label,
+      name,
+    );
+    assert.equal(await page.locator('#score').textContent(), '000000');
+    if (index === 5)
+      await page.screenshot({ path: 'artifacts/polyphase-hexageddon.png', fullPage: true });
+  }
+  checks.push('Full effects default despite OS preference; all six named previews preserve score');
   await page.screenshot({ path: 'artifacts/polyphase-menu.png', fullPage: true });
   checks.push('Menu, GPU atmosphere, fonts and interface loaded');
   await page.getByRole('button', { name: 'Mute sound', exact: true }).focus();
