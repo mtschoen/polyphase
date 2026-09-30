@@ -1,0 +1,8 @@
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/inter';
+@import './styles/foundation.css';
+@import './styles/board.css';
+@import './styles/panels.css';
+@import './styles/dialogs.css';
+@import './styles/desktop.css';
+@import './styles/mobile.css';

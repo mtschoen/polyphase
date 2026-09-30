@@ -1,0 +1,93 @@
+dialog {
+  color: #d8eadd;
+  background: #10211cf5;
+  border: 1px solid #789f8745;
+  border-radius: 12px;
+  padding: 30px;
+  width: 440px;
+  max-width: 90vw;
+  box-shadow: 0 30px 100px #0009;
+}
+dialog::backdrop {
+  background: #030b0899;
+  backdrop-filter: blur(8px);
+}
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.close-button {
+  font-size: 25px;
+  color: #acc5b4;
+  background: transparent;
+}
+.dialog-heading .eyebrow {
+  font-size: 7px;
+}
+dialog h2 {
+  font-size: 29px;
+  margin-top: 18px;
+}
+dialog p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #a1b8a9;
+}
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  font-size: 12px;
+}
+.setting-row output {
+  color: var(--accent);
+}
+input[type='range'] {
+  accent-color: var(--accent);
+  width: 100%;
+  margin: 20px 0 24px;
+}
+.setting-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 20px;
+}
+.setting-toggle input {
+  accent-color: var(--accent);
+  width: 17px;
+  height: 17px;
+}
+.setting-hint {
+  font-size: 9px !important;
+  margin: 4px 0 22px;
+}
+.dialog-bottom {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 24px;
+  font-size: 9px !important;
+}
+.help-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 10px;
+  color: #a1b8a9;
+  margin: 24px 0;
+}
+.help-grid kbd {
+  font-size: 9px;
+}
+.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes equalize {
+  to {
+    transform: scaleY(0.35);
+  }
+}

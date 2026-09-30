@@ -1,0 +1,329 @@
+@media (max-width: 900px) {
+  :root {
+    --board-height: 60vh;
+  }
+  .site-header {
+    height: 70px;
+    margin: 0 5%;
+  }
+  .wordmark {
+    font-size: 17px;
+    letter-spacing: 2px;
+  }
+  .header-actions {
+    gap: 1px;
+  }
+  .experience {
+    grid-template-columns: auto 145px;
+    gap: 20px;
+    padding-top: 18px;
+  }
+  .journey {
+    grid-column: 1/-1;
+    padding: 0;
+    width: 100%;
+    max-width: 540px;
+  }
+  .journey > .eyebrow,
+  .journey h1,
+  .intro-copy,
+  .mode-heading,
+  .pace-label,
+  .journey-note {
+    display: none;
+  }
+  .modes {
+    flex-direction: row;
+    gap: 7px;
+  }
+  .mode {
+    padding: 10px;
+    gap: 8px;
+    flex: 1;
+  }
+  .mode-number {
+    font-size: 19px;
+    width: auto;
+  }
+  .mode-number span,
+  .mode-check,
+  .mode small {
+    display: none;
+  }
+  .mode strong {
+    font-size: 11px;
+    margin: 0;
+  }
+  .pace {
+    margin-top: 10px;
+    width: 100%;
+    padding: 2px;
+  }
+  .pace button {
+    padding: 5px 12px;
+    text-align: center;
+    font-size: 10px;
+  }
+  .pace button span {
+    display: inline;
+    margin-left: 8px;
+    font-size: 8px;
+  }
+  .telemetry {
+    padding-top: 30px;
+  }
+  #score {
+    font-size: 27px;
+  }
+  .piece-panel {
+    padding: 10px;
+  }
+  .next-item canvas {
+    height: 43px;
+  }
+  .run-stats {
+    margin: 14px 0;
+    padding: 12px 0;
+  }
+  .run-stats > div + div {
+    padding-left: 15px;
+  }
+  .hold-panel > canvas {
+    height: 50px;
+  }
+  .board-heading {
+    font-size: 8px;
+  }
+  .keyboard-strip {
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 15px 20px;
+  }
+  .headphone-note {
+    display: none;
+  }
+  .site-footer {
+    margin: 0 5%;
+    padding: 17px 0;
+  }
+  .touch-controls {
+    display: flex;
+    gap: 4px;
+    margin-top: 13px;
+  }
+  .touch-controls button {
+    background: #183526ad;
+    border: 1px solid #6f9c7b35;
+    border-radius: 5px;
+    flex: 1;
+    min-height: 36px;
+    touch-action: none;
+    font-size: 15px;
+  }
+  .touch-controls button:first-child,
+  .touch-controls button:last-child {
+    font-size: 7px;
+    letter-spacing: 0.5px;
+  }
+  .overlay-content {
+    padding: 10px 15px 25px;
+  }
+  .overlay-content h2 {
+    font-size: 29px;
+  }
+  .orbital-icon {
+    margin-bottom: 15px;
+  }
+  .resonance {
+    margin-top: 16px;
+  }
+}
+@media (max-width: 540px) {
+  :root {
+    --board-height: 55vh;
+  }
+  .experience {
+    grid-template-columns: minmax(0, 1fr) 105px;
+    gap: 12px;
+    padding: 12px 15px 18px;
+  }
+  .game-section {
+    width: 100%;
+    max-width: none;
+  }
+  #board {
+    height: auto;
+    aspect-ratio: var(--board-ratio, 0.5454545);
+  }
+  .board-frame {
+    padding: 5px;
+  }
+  .board-overlay {
+    inset: 6px;
+  }
+  .journey {
+    width: 100%;
+  }
+  .header-actions .icon-button {
+    width: 28px;
+  }
+  .site-header {
+    margin: 0 15px;
+    height: 65px;
+  }
+  .wordmark {
+    font-size: 15px;
+    gap: 9px;
+  }
+  .brand-shape {
+    grid-template-columns: repeat(2, 5px);
+    gap: 2px;
+  }
+  .brand-shape i {
+    width: 5px;
+    height: 5px;
+  }
+  .mode-number {
+    font-size: 17px;
+  }
+  .mode {
+    padding: 10px 8px;
+  }
+  .mode strong {
+    font-size: 10px;
+  }
+  .telemetry {
+    padding-top: 32px;
+  }
+  .score-block .eyebrow {
+    font-size: 6px;
+  }
+  #score {
+    font-size: 22px;
+    letter-spacing: 0;
+  }
+  .best {
+    font-size: 5px;
+    letter-spacing: 0.4px;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .run-stats {
+    padding: 10px 0;
+    margin: 12px 0;
+  }
+  .run-stats strong {
+    font-size: 20px;
+  }
+  .run-stats span {
+    font-size: 6px;
+  }
+  .run-stats > div + div {
+    padding-left: 12px;
+  }
+  .panel-heading {
+    font-size: 6px;
+    letter-spacing: 0.8px;
+  }
+  .piece-panel {
+    padding: 9px 7px;
+  }
+  .hold-panel > canvas {
+    height: 43px;
+  }
+  .hold-panel > small {
+    font-size: 6px;
+  }
+  .next-item {
+    gap: 3px;
+  }
+  .next-item canvas {
+    height: 37px;
+    width: calc(100% - 9px);
+  }
+  .next-item > span {
+    font-size: 5px;
+  }
+  .resonance .panel-heading {
+    font-size: 6px;
+    letter-spacing: 0.5px;
+  }
+  .charge-caption {
+    font-size: 5px;
+    letter-spacing: 0;
+  }
+  .charge-track {
+    margin-top: 10px;
+  }
+  .board-heading {
+    font-size: 7px;
+    letter-spacing: 0.8px;
+  }
+  .board-heading b {
+    padding: 0 3px;
+  }
+  .board-heading #game-state {
+    font-size: 5px;
+    letter-spacing: 0.3px;
+  }
+  .board-foot {
+    font-size: 5px;
+    letter-spacing: 0.5px;
+    padding-top: 10px;
+  }
+  .overlay-content {
+    padding: 10px 12px;
+  }
+  .overlay-content h2 {
+    font-size: 25px;
+  }
+  .overlay-content > .eyebrow {
+    font-size: 5px;
+    letter-spacing: 1px;
+  }
+  .orbital-icon {
+    transform: scale(0.8);
+    margin-bottom: 5px;
+  }
+  .overlay-content p {
+    font-size: 8px;
+    margin-bottom: 20px;
+  }
+  .start-button {
+    font-size: 9px;
+    padding: 13px;
+  }
+  .start-hint {
+    font-size: 5px;
+  }
+  .now-playing > div > span {
+    font-size: 5px;
+    letter-spacing: 0.7px;
+  }
+  .now-playing strong {
+    font-size: 9px;
+  }
+  .theme-picker {
+    gap: 8px;
+  }
+  .theme-picker > span {
+    font-size: 6px;
+    min-width: 51px;
+    letter-spacing: 0.6px;
+  }
+  .site-footer {
+    margin: 0 15px;
+  }
+  .keyboard-strip {
+    display: none;
+  }
+  .touch-controls {
+    gap: 3px;
+  }
+  .touch-controls button {
+    min-height: 38px;
+  }
+  .pace button span {
+    font-size: 7px;
+  }
+}

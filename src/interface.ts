@@ -1,0 +1,125 @@
+import { THEMES, type GameStatus } from './game/types';
+
+const icons = {
+  sound: '<path d="m11 5-6 4H2v6h3l6 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
+  expand: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/>',
+  settings:
+    '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .5-1.5 1-1.5 2M12 16h.01"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
+};
+export function icon(name: keyof typeof icons): string {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
+}
+
+export function createInterface(): void {
+  document.querySelector('#app')!.innerHTML = `
+    <canvas id="universe" aria-hidden="true"></canvas><div class="vignette"></div>
+    <header class="site-header">
+      <a class="wordmark" href="./" aria-label="Polyphase home"><span class="brand-shape"><i></i><i></i><i></i><i></i><i></i></span>POLYPHASE<span class="edition">VOL. 01</span></a>
+      <div class="header-center"><span class="live-dot"></span> A FALLING-BLOCK ODYSSEY</div>
+      <nav class="header-actions" aria-label="Game tools">
+        <button id="mute" class="icon-button" title="Toggle sound (M)" aria-label="Mute sound" aria-pressed="false">${icon('sound')}</button>
+        <button id="help" class="icon-button" title="How to play" aria-label="How to play">${icon('help')}</button>
+        <button id="fullscreen" class="icon-button" title="Fullscreen (F)" aria-label="Toggle fullscreen">${icon('expand')}</button>
+        <button id="settings" class="icon-button" title="Settings" aria-label="Settings">${icon('settings')}</button>
+      </nav>
+    </header>
+    <main class="experience">
+      <aside class="journey">
+        <div class="eyebrow"><span class="small-line"></span> BEYOND FOUR SQUARES</div>
+        <h1>Find your<br><em>flow state.</em></h1>
+        <p class="intro-copy">A familiar rhythm.<br>A whole new dimension.</p>
+        <div class="mode-heading">CHOOSE YOUR FREQUENCY <span>01 / 03</span></div>
+        <div class="modes" role="group" aria-label="Game mode">
+          <button class="mode selected" data-mode="pentris" aria-pressed="true"><span class="mode-number">5<span>■</span></span><span><strong>Pentris</strong><small>Five squares. Infinite possibility.</small></span><span class="mode-check">↗</span></button>
+          <button class="mode" data-mode="sextris" aria-pressed="false"><span class="mode-number">6<span>■</span></span><span><strong>Sextris</strong><small>Six squares. A beautiful challenge.</small></span><span class="mode-check">↗</span></button>
+          <button class="mode" data-mode="fusion" aria-pressed="false"><span class="mode-number fusion-symbol">∞</span><span><strong>Fusion</strong><small>Two worlds. One flow.</small></span><span class="mode-check">↗</span></button>
+        </div>
+        <div class="pace-label">SET YOUR PACE</div>
+        <div class="pace" role="group" aria-label="Difficulty"><button data-difficulty="flow" class="selected" aria-pressed="true">Flow <span>Take your time</span></button><button data-difficulty="rush" aria-pressed="false">Rush <span>Feel the pressure</span></button></div>
+        <div class="journey-note"><span>✳</span><p>Build a little harmony.<br>Clear lines. Light up the universe.</p></div>
+      </aside>
+      <section class="game-section" aria-label="Game board">
+        <div class="board-heading"><span id="board-title">01 <b>/</b> PENTRIS</span><span id="game-state"><i></i> STANDBY</span><button id="pause" class="icon-button" aria-label="Pause game" title="Pause (P)">${icon('pause')}</button></div>
+        <div class="board-frame" id="board-frame"><div class="board-corner top-left"></div><div class="board-corner top-right"></div><canvas id="board" aria-label="Falling polyomino game board"></canvas><div id="overlay" class="board-overlay"></div><div class="board-corner bottom-left"></div><div class="board-corner bottom-right"></div><div id="callout" aria-live="polite"></div></div>
+        <div class="board-foot"><span><i class="live-dot"></i> <span id="board-size">12 × 22 MATRIX</span></span><span id="run-time">00:00</span></div>
+        <div class="touch-controls" aria-label="Touch controls"><button data-action="hold" aria-label="Hold piece">HOLD</button><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate clockwise">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="down" aria-label="Soft drop">↓</button><button data-action="drop" aria-label="Hard drop">DROP</button></div>
+      </section>
+      <aside class="telemetry">
+        <div class="score-block"><div class="eyebrow">YOUR SCORE</div><div id="score">000000</div><div class="best">PERSONAL BEST <span id="best">0</span></div></div>
+        <div class="run-stats"><div><span>LEVEL</span><strong id="level">01</strong></div><div><span>LINES</span><strong id="lines">00</strong></div></div>
+        <div class="piece-panel hold-panel"><div class="panel-heading">HOLD <kbd>C</kbd></div><canvas id="held" width="160" height="64" aria-label="Held piece"></canvas><small id="hold-caption">A little breathing room</small></div>
+        <div class="piece-panel next-panel"><div class="panel-heading">UP NEXT <span>→</span></div>${[0, 1, 2, 3].map((index) => `<div class="next-item"><span>0${index + 1}</span><canvas id="next-${index}" width="132" height="58" aria-label="Next piece ${index + 1}"></canvas></div>`).join('')}</div>
+        <button id="resonance" class="resonance" title="Fill the meter, then press Enter to clear the bottom four rows"><span class="panel-heading"><span>✳ RESONANCE</span><kbd>↵</kbd></span><span class="charge-track"><span id="charge-fill"></span></span><span class="charge-caption"><span id="charge-label">FIND YOUR RHYTHM</span><span id="charge-percent">0%</span></span></button>
+      </aside>
+    </main>
+    <footer class="site-footer"><div class="now-playing"><div class="equalizer"><i></i><i></i><i></i><i></i><i></i></div><div><span>ORIGINAL SOUND EXPERIENCE</span><strong id="track-name">Eventide <b>·</b> 92 BPM</strong></div></div><div class="theme-picker" role="group" aria-label="Atmosphere">${THEMES.map((theme, index) => `<button data-theme="${index}" class="theme-dot ${index === 0 ? 'selected' : ''}" style="--swatch:${theme.primary}" aria-label="${theme.name} atmosphere" aria-pressed="${index === 0}"></button>`).join('')}<span id="theme-name">EVENTIDE</span></div><div class="headphone-note">◉ <span>Better with headphones</span></div></footer>
+    <div class="keyboard-strip"><span><kbd>←</kbd><kbd>→</kbd> move</span><span><kbd>↑</kbd> rotate</span><span><kbd>↓</kbd> soft drop</span><span><kbd class="wide-key">SPACE</kbd> hard drop</span><span><kbd>C</kbd> hold</span><span><kbd>P</kbd> pause</span></div>
+    <dialog id="settings-dialog"><div class="dialog-heading"><span class="eyebrow">MAKE SPACE FOR YOURSELF</span><button data-close class="close-button" aria-label="Close settings">×</button></div><h2>Your atmosphere.</h2><label class="setting-row" for="volume">Master volume <output id="volume-value">60%</output></label><input type="range" id="volume" min="0" max="100" value="60"/><label class="setting-toggle">Reduced motion <input type="checkbox" id="reduced-motion"/></label><p class="setting-hint">A calmer universe, without shake or flashes.</p><label class="setting-toggle">Landing guide <input type="checkbox" id="ghost" checked/></label><p class="setting-hint">See exactly where your next piece will land.</p><p class="dialog-bottom">Your settings and personal bests stay on this device.</p></dialog>
+    <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">A FAMILIAR RHYTHM, REMIXED</span><button data-close class="close-button" aria-label="Close help">×</button></div><h2>A few more squares.<br>A lot more possibility.</h2><p>Fit the falling shapes together. Fill a complete horizontal line to clear it. Keep the stack below the top.</p><div class="help-grid"><span>Move</span><kbd>← → / A D</kbd><span>Rotate clockwise</span><kbd>↑ / X / E</kbd><span>Rotate counterclockwise</span><kbd>Z / Q</kbd><span>Soft / hard drop</span><kbd>↓ / SPACE</kbd><span>Hold a piece</span><kbd>C / SHIFT</kbd><span>Resonance</span><kbd>ENTER</kbd><span>Pause</span><kbd>P / ESC</kbd><span>Mute / fullscreen</span><kbd>M / F</kbd></div><p><strong>Make some space.</strong> Each placement and cleared line charges Resonance. At 100%, press Enter to sweep away the bottom four rows.</p><p class="dialog-bottom">Pentris: all 12 five-square shapes. Sextris: all 35 six-square shapes. Fusion: a balanced mix of both.</p></dialog>
+    <div id="toast" role="status"></div>`;
+}
+
+export function renderOverlay(status: GameStatus, score: number): void {
+  const overlay = document.querySelector<HTMLElement>('#overlay')!;
+  overlay.hidden = status === 'playing';
+  if (status === 'playing') return;
+  const ready = status === 'ready';
+  const paused = status === 'paused';
+  overlay.replaceChildren();
+  const content = append(overlay, 'div', 'overlay-content');
+  const orbit = append(content, 'div', 'orbital-icon');
+  append(orbit, 'span');
+  append(orbit, 'i', '', '✳');
+  append(
+    content,
+    'span',
+    'eyebrow',
+    ready ? 'MORE SHAPE. MORE FEELING.' : paused ? 'TAKE A BREATH' : 'EVERY END IS A BEGINNING',
+  );
+  const heading = append(content, 'h2', '', ready ? 'One more' : paused ? 'Stay in' : 'Beautiful');
+  append(heading, 'br');
+  append(heading, 'em', '', ready ? 'dimension.' : paused ? 'your orbit.' : 'experiment.');
+  append(
+    content,
+    'p',
+    '',
+    ready
+      ? 'Let the world fall into place.'
+      : paused
+        ? 'Your universe will be here.'
+        : `${score.toLocaleString()} points. Find your flow again.`,
+  );
+  const start = append(
+    content,
+    'button',
+    'start-button',
+    ready ? 'Enter the flow' : paused ? 'Keep flowing' : 'One more journey',
+  );
+  start.dataset.overlayAction = paused ? 'resume' : 'start';
+  const arrow = append(start, 'span', '', '→');
+  arrow.setAttribute('aria-hidden', 'true');
+  if (ready) append(content, 'small', 'start-hint', 'PRESS SPACE TO BEGIN');
+  else
+    append(content, 'button', 'text-button', 'Back to frequencies').dataset.overlayAction = 'menu';
+}
+
+function append<Tag extends keyof HTMLElementTagNameMap>(
+  parent: HTMLElement,
+  tag: Tag,
+  className = '',
+  text = '',
+): HTMLElementTagNameMap[Tag] {
+  const child = document.createElement(tag);
+  child.className = className;
+  child.textContent = text;
+  parent.append(child);
+  return child;
+}
+
+export function setText(selector: string, text: string): void {
+  const element = document.querySelector(selector)!;
+  if (element.textContent !== text) element.textContent = text;
+}

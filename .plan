@@ -4,9 +4,9 @@ Goal: Deliver a polished, playable audiovisual polyomino arcade.
 Architecture: deterministic TypeScript rules, Canvas board, Three.js universe, Web Audio synth.
 Technology: Vite, TypeScript, Three.js, Vitest, ESLint, Prettier.
 
-- [ ] Rules: 12 free pentominoes and 35 free hexominoes; bags; boards; kicks, hold, ghost, drop, lock delay, lines, scoring, charge and game over. Behavior tests first.
-- [ ] Audio: original chords, bass, arpeggio, drums, delay and responsive effects; gesture startup, mute, pause and volume.
-- [ ] Universe: Three.js cosmic vista with stars, aurora, luminous orbit, themes and impact reaction; reduced motion and fallback.
-- [ ] Interface: responsive UI, Canvas pieces/particles, shake, previews, modes/difficulty, settings, pause/restart, records, touch.
-- [ ] Integration: review lanes; build, lint, one full suite, aislop, browser playthroughs and screenshots.
-- [ ] Documentation: README, build instructions, TEST-REPORT and launcher; leave a runnable local server.
+- [x] Rules: 12 free pentominoes and 35 free hexominoes; bags; boards; kicks, hold, ghost, drop, lock delay, lines, scoring, charge and game over. Behavior tests first.
+- [x] Audio: original chords, bass, arpeggio, drums, delay and responsive effects; gesture startup, mute, pause and volume.
+- [x] Universe: Three.js cosmic vista with stars, aurora, luminous orbit, themes and impact reaction; reduced motion and fallback.
+- [x] Interface: responsive UI, Canvas pieces/particles, shake, previews, modes/difficulty, settings, pause/restart, records, touch.
+- [x] Integration: review lanes; build, lint, one full suite, aislop, browser playthroughs and screenshots.
+- [x] Documentation: README, build instructions, TEST-REPORT and launcher; leave a runnable local server.

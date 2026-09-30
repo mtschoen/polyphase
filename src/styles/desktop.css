@@ -1,0 +1,139 @@
+@media (min-width: 1500px) and (min-height: 900px) {
+  :root {
+    --board-height: min(65vh, 748px);
+  }
+  .experience {
+    gap: 70px;
+    padding-top: 48px;
+  }
+  .journey {
+    padding-top: 68px;
+  }
+  .telemetry {
+    padding-top: 47px;
+  }
+  .site-header {
+    height: 112px;
+  }
+  h1 {
+    font-size: 50px;
+  }
+  .mode {
+    padding: 16px 14px;
+  }
+  .intro-copy {
+    margin-bottom: 40px;
+  }
+  .next-item canvas {
+    height: 61px;
+  }
+  .piece-panel {
+    padding: 15px;
+  }
+  .hold-panel > canvas {
+    height: 64px;
+  }
+  .resonance {
+    margin-top: 28px;
+  }
+  .site-footer {
+    padding: 26px 0;
+  }
+  .keyboard-strip {
+    padding-top: 24px;
+  }
+}
+@media (max-height: 800px) and (min-width: 901px) {
+  :root {
+    --board-height: 62vh;
+  }
+  .site-header {
+    height: 72px;
+  }
+  .experience {
+    padding-top: 22px;
+    gap: 36px;
+  }
+  .journey {
+    padding-top: 28px;
+  }
+  h1 {
+    font-size: 36px;
+    margin: 14px 0 10px;
+  }
+  .intro-copy {
+    margin-bottom: 20px;
+  }
+  .mode {
+    padding: 10px 12px;
+  }
+  .pace-label {
+    margin-top: 18px;
+  }
+  .journey-note {
+    margin-top: 16px;
+  }
+  .telemetry {
+    padding-top: 31px;
+  }
+  #score {
+    font-size: 31px;
+  }
+  .run-stats {
+    margin: 13px 0;
+    padding: 10px 0;
+  }
+  .next-item canvas {
+    height: 36px;
+  }
+  .hold-panel > canvas {
+    height: 43px;
+  }
+  .resonance {
+    margin-top: 15px;
+  }
+  .site-footer {
+    padding: 15px 0;
+  }
+  .keyboard-strip {
+    padding: 13px 0;
+  }
+  .overlay-content {
+    padding-top: 10px;
+  }
+  .orbital-icon {
+    margin-bottom: 14px;
+    height: 50px;
+  }
+  h2 {
+    font-size: 29px;
+  }
+  .overlay-content p {
+    margin-bottom: 20px;
+  }
+}
+@media (max-width: 1100px) {
+  .header-center {
+    display: none;
+  }
+  .experience {
+    gap: 25px;
+    grid-template-columns: 230px auto 165px;
+  }
+  .mode {
+    padding: 12px 11px;
+    gap: 9px;
+  }
+  .mode small {
+    font-size: 7px;
+  }
+  h1 {
+    font-size: 40px;
+  }
+  .edition {
+    display: none;
+  }
+  .journey > .eyebrow {
+    font-size: 7px;
+  }
+}
