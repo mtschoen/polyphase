@@ -308,6 +308,7 @@ describe('simulation and lock delay', () => {
     game.update(interval);
     expect(game.active!.y).toBe(initialY + 1);
     expect(game.elapsed).toBe(interval);
+    expect(game.drainEvents()).toEqual([]);
   });
 
   it('scores accelerated soft drop without locking on first contact', () => {
@@ -318,8 +319,24 @@ describe('simulation and lock delay', () => {
     expect(game.active!.y).toBe(21);
     expect(game.score).toBe(1);
     expect(game.board[21].every((cell) => cell === null)).toBe(true);
+    expect(game.drainEvents()).toEqual([{ type: 'softdrop' }]);
+    game.update(0.07);
+    expect(game.drainEvents()).toEqual([]);
     game.update(0.5);
     expect(game.board[21].filter((cell) => cell !== null)).toHaveLength(5);
+  });
+
+  it('emits one soft-drop cue for each successful descent in a long update', () => {
+    const game = fresh();
+    place(game, horizontal, 3, 10);
+    game.softDrop = true;
+    game.update(0.105);
+    expect(game.active!.y).toBe(13);
+    expect(game.drainEvents().map((event) => event.type)).toEqual([
+      'softdrop',
+      'softdrop',
+      'softdrop',
+    ]);
   });
 
   it('locks after 500 ms on the floor and only permits fifteen movement resets', () => {

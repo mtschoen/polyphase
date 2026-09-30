@@ -167,7 +167,10 @@ export class GameEngine {
         this.gravityElapsed = 0;
         if (this.fits(this.active, this.active.x, this.active.y + 1)) {
           this.active.y += 1;
-          if (this.softDrop) this.score += 1;
+          if (this.softDrop) {
+            this.score += 1;
+            this.events.push({ type: 'softdrop' });
+          }
         }
       }
     }

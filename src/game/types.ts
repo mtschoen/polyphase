@@ -31,7 +31,17 @@ export interface CellMark {
   color: number;
 }
 export interface GameEvent {
-  type: 'move' | 'rotate' | 'drop' | 'lock' | 'clear' | 'hold' | 'resonance' | 'gameover' | 'level';
+  type:
+    | 'move'
+    | 'rotate'
+    | 'softdrop'
+    | 'drop'
+    | 'lock'
+    | 'clear'
+    | 'hold'
+    | 'resonance'
+    | 'gameover'
+    | 'level';
   cells?: CellMark[];
   rows?: number[];
   amount?: number;

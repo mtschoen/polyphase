@@ -61,7 +61,7 @@ export class AudioEngine {
   private pieceSizes: readonly number[] = [5];
   private sequenceStep = 0;
   private nextNoteTime = 0;
-  private lastInteractionTime = -Infinity;
+  private interactionTimes = new Map<SoundEffect, number>();
 
   async start(): Promise<void> {
     if (this.disposed) return;
@@ -143,9 +143,10 @@ export class AudioEngine {
       return;
     const time = context.currentTime + 0.005;
     const chord = this.currentChord();
-    if (type === 'move' || type === 'rotate') {
-      if (time - this.lastInteractionTime < 0.035) return;
-      this.lastInteractionTime = time;
+    if (type === 'move' || type === 'rotate' || type === 'softdrop') {
+      const interval = type === 'softdrop' ? 0.07 : 0.035;
+      if (time - (this.interactionTimes.get(type) ?? -Infinity) < interval) return;
+      this.interactionTimes.set(type, time);
     }
     const duckDuration = scheduleEffect(
       { note: this.note.bind(this), kick: this.kick.bind(this), noise: this.noise.bind(this) },
@@ -175,6 +176,7 @@ export class AudioEngine {
       voice.nodes.forEach((node) => node.disconnect());
     }
     this.voices.clear();
+    this.interactionTimes.clear();
     this.permanentNodes.forEach((node) => node.disconnect());
     this.permanentNodes = [];
     if (context.state !== 'closed') void context.close();

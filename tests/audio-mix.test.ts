@@ -128,6 +128,41 @@ afterEach(() => {
 });
 
 describe('club audio mix', () => {
+  it('preserves same-frame rotation after movement while limiting repeat clicks', async () => {
+    await engine.start();
+    const seam = engine as unknown as Seam;
+    engine.effect('move');
+    engine.effect('rotate');
+    expect(seam.context.oscillators).toHaveLength(2);
+    engine.effect('move');
+    engine.effect('rotate');
+    expect(seam.context.oscillators).toHaveLength(2);
+    seam.context.currentTime = 0.04;
+    engine.effect('move');
+    engine.effect('rotate');
+    expect(seam.context.oscillators).toHaveLength(4);
+  });
+
+  it('limits soft-drop ticks without suppressing other actions or bypassing mute', async () => {
+    await engine.start();
+    const seam = engine as unknown as Seam;
+    engine.effect('softdrop');
+    seam.context.currentTime = 0.035;
+    engine.effect('softdrop');
+    engine.effect('rotate');
+    expect(seam.context.oscillators).toHaveLength(2);
+    seam.context.currentTime = 0.08;
+    engine.effect('softdrop');
+    expect(seam.context.oscillators).toHaveLength(3);
+    engine.setMuted(true);
+    seam.context.currentTime = 1;
+    engine.effect('softdrop');
+    engine.setMuted(false);
+    engine.setVolume(0);
+    engine.effect('hold');
+    expect(seam.context.oscillators).toHaveLength(3);
+  });
+
   it('starts pumping on platforms without cancelAndHoldAtTime', async () => {
     await engine.start();
     const seam = engine as unknown as Seam;

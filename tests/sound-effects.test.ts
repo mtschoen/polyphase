@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AudioEngine } from '../src/audio';
 import type { AudioLane, VoiceOptions } from '../src/audio';
+import type { SoundEffect } from '../src/sound-effects';
 
 interface Tone {
   note: number;
@@ -10,7 +11,7 @@ interface Tone {
   options: VoiceOptions;
 }
 
-function capture(type: 'clear' | 'lock' | 'drop', amount = 1) {
+function capture(type: SoundEffect, amount = 1) {
   const tones: Tone[] = [];
   const noises: { duration: number; volume: number }[] = [];
   const engine = new AudioEngine();
@@ -38,6 +39,25 @@ function capture(type: 'clear' | 'lock' | 'drop', amount = 1) {
 }
 
 describe('arcade sound effects', () => {
+  it('gives each action a distinct short cue that cuts through the arrangement', () => {
+    const actions = ['move', 'rotate', 'drop', 'lock', 'hold', 'softdrop'] as const;
+    const cues = actions.map((action) => capture(action));
+    expect(new Set(cues.map((cue) => JSON.stringify(cue))).size).toBe(actions.length);
+    for (const [index, cue] of cues.entries()) {
+      expect(cue.tones.length).toBeGreaterThan(0);
+      expect(Math.max(...cue.tones.map((tone) => tone.volume))).toBeGreaterThanOrEqual(
+        actions[index] === 'softdrop' ? 0.025 : 0.04,
+      );
+      expect(Math.max(...cue.tones.map((tone) => tone.time + tone.duration))).toBeLessThan(0.3);
+    }
+    const rotation = capture('rotate').tones[0];
+    const drop = capture('drop').tones[0];
+    expect(rotation.options.targetFrequency).toBeGreaterThan(
+      440 * 2 ** ((rotation.note - 69) / 12),
+    );
+    expect(drop.options.targetFrequency).toBeLessThan(440 * 2 ** ((drop.note - 69) / 12));
+  });
+
   it('gives each clear tier a distinct, increasingly rich and longer musical response', () => {
     const tiers = [1, 2, 3, 4, 5, 6].map((lines) => capture('clear', lines));
     const endings = tiers.map(({ tones, noises }) =>

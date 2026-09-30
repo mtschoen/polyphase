@@ -3,7 +3,16 @@ import { getClearTier } from './clear-tiers';
 import { frequencyForNote, MELODY_WAVE, PAD_PANNING } from './score';
 
 export type SoundEffect =
-  'move' | 'rotate' | 'drop' | 'lock' | 'clear' | 'hold' | 'resonance' | 'gameover' | 'level';
+  | 'move'
+  | 'rotate'
+  | 'softdrop'
+  | 'drop'
+  | 'lock'
+  | 'clear'
+  | 'hold'
+  | 'resonance'
+  | 'gameover'
+  | 'level';
 
 /** A deterministic score for original effects, independent of native audio nodes. */
 export interface EffectInstruments {
@@ -100,33 +109,67 @@ export function scheduleEffect(
 ): number {
   switch (type) {
     case 'move':
-      instruments.note(chord[2] + 12, time, 0.075, 0.022, 'effect', { pan: -0.2, cutoff: 1700 });
+      instruments.note(chord[2] + 12, time, 0.05, 0.045, 'effect', {
+        wave: 'triangle',
+        attack: 0.002,
+        release: 0.045,
+        pan: -0.2,
+        cutoff: 4200,
+      });
       break;
     case 'rotate':
-      instruments.note(chord[3] + 12, time, 0.13, 0.026, 'effect', {
+      instruments.note(chord[3] + 12, time, 0.105, 0.065, 'effect', {
         wave: MELODY_WAVE,
+        attack: 0.002,
+        release: 0.095,
         pan: 0.25,
-        cutoff: 2400,
-        targetFrequency: frequencyForNote(chord[3] + 14),
+        cutoff: 4600,
+        targetFrequency: frequencyForNote(chord[3] + 19),
+      });
+      break;
+    case 'softdrop':
+      instruments.note(chord[1] + 12, time, 0.035, 0.03, 'effect', {
+        wave: 'triangle',
+        attack: 0.002,
+        release: 0.03,
+        cutoff: 2800,
       });
       break;
     case 'drop':
-      instruments.note(chord[0] + 12, time, 0.12, 0.025, 'effect', {
-        cutoff: 1200,
+      instruments.note(chord[0] + 12, time, 0.12, 0.055, 'effect', {
+        wave: 'triangle',
+        attack: 0.002,
+        release: 0.11,
+        cutoff: 3400,
         targetFrequency: frequencyForNote(chord[0] - 12),
       });
-      instruments.noise(time, 0.1, 0.024, 1800, 'bandpass', 'effect', 400);
+      instruments.noise(time, 0.09, 0.03, 2800, 'bandpass', 'effect', 500);
       break;
     case 'lock':
-      instruments.note(chord[0] - 12, time, 0.13, 0.045, 'effect', {
-        wave: MELODY_WAVE,
-        cutoff: 380,
+      instruments.note(chord[0] - 12, time, 0.14, 0.075, 'effect', {
+        wave: 'triangle',
+        attack: 0.002,
+        release: 0.13,
+        cutoff: 700,
+        targetFrequency: frequencyForNote(chord[0] - 19),
       });
-      instruments.noise(time, 0.045, 0.013, 680, 'lowpass', 'effect');
+      instruments.noise(time, 0.035, 0.022, 1250, 'lowpass', 'effect');
       break;
     case 'hold':
-      instruments.note(chord[1] + 12, time, 0.22, 0.036, 'effect', { pan: -0.3 });
-      instruments.note(chord[2] + 12, time + 0.06, 0.3, 0.032, 'effect', { pan: 0.3 });
+      instruments.note(chord[1] + 12, time, 0.12, 0.065, 'effect', {
+        wave: 'triangle',
+        attack: 0.003,
+        release: 0.11,
+        pan: -0.3,
+        cutoff: 3800,
+      });
+      instruments.note(chord[2] + 12, time + 0.05, 0.16, 0.05, 'effect', {
+        wave: 'triangle',
+        attack: 0.003,
+        release: 0.15,
+        pan: 0.3,
+        cutoff: 3800,
+      });
       break;
     case 'clear':
       return clearStinger(instruments, chord, time, amount);
