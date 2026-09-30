@@ -59,6 +59,16 @@ export class GameFeedback {
     this.handle([{ type: 'clear', amount: tier.lines, rows, cells }], width, now);
   }
 
+  previewLanding(width: number, height: number, now: number): void {
+    const left = Math.floor((width - 5) / 2);
+    const cells = Array.from({ length: 5 }, (_, index) => ({
+      x: left + index,
+      y: height - 1,
+      color: 0,
+    }));
+    this.handle([{ type: 'lock', cells }], width, now, false);
+  }
+
   update(now: number): void {
     if (now >= this.expires) {
       this.callout.classList.remove('visible');

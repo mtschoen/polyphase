@@ -6,6 +6,8 @@ dialog {
   padding: 30px;
   width: 440px;
   max-width: 90vw;
+  max-height: 90dvh;
+  overflow-y: auto;
   box-shadow: 0 30px 100px #0009;
 }
 dialog::backdrop {
@@ -42,6 +44,36 @@ dialog p {
 }
 .setting-row output {
   color: var(--accent);
+}
+.impact-controls {
+  margin: 0;
+  padding: 10px 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.impact-controls legend {
+  padding: 0 8px;
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.impact-controls .setting-row {
+  margin-top: 10px;
+}
+.impact-controls input[type='range'] {
+  margin: 8px 0 10px;
+  min-height: 24px;
+}
+.impact-controls .text-button {
+  padding: 5px 0;
+  color: var(--accent);
+  font-size: 10px;
+}
+.impact-controls:disabled {
+  opacity: 0.5;
+}
+#impact-hint {
+  margin-top: 8px;
 }
 input[type='range'] {
   accent-color: var(--accent);

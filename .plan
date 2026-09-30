@@ -15,3 +15,6 @@ Technology: Vite, TypeScript, Three.js, Vitest, ESLint, Prettier.
 - [x] Impact timing: visibly bright fine landing sparks, stronger line explosions and deterministic 0.36 to 0.66 second clear entry delays in Flow and Rush, verified together in native rendering.
 - [x] Club soundtrack: concise looping hooks in 1/4 through 6/4, independent Fusion phrases, layered kick and sub-bass, melodic/echo side-chain pumping, independent review and native gain-envelope verification.
 - [x] Extra juice: 50% more synthesized output, shake, particle size/count, shockwaves and background impact pulse; native full-volume headroom and clear-entry readability verified.
+- [x] Tunable impacts: fuller landing glow, independent density/size/shake sliders, tuned 60/60/175 mix rebased to 100% with 0-300% ranges, persistent settings and reduced-motion override.
+- [x] Action cues: audible movement/rotation/drop/landing/hold, manual soft-drop ticks and independent cooldowns; native output checked against energetic music.
+- [x] Hidden Juice lab: Konami unlock, repeatable score-safe previews, synchronized sliders, pause/focus behavior and desktop/mobile browser verification.

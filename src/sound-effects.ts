@@ -2,6 +2,9 @@ import type { VoiceOptions } from './audio';
 import { getClearTier } from './clear-tiers';
 import { frequencyForNote, MELODY_WAVE, PAD_PANNING } from './score';
 
+const ACTION_WAVE: OscillatorType = 'triangle';
+const ACTION_ATTACK_SECONDS = 0.002;
+
 export type SoundEffect =
   | 'move'
   | 'rotate'
@@ -110,8 +113,8 @@ export function scheduleEffect(
   switch (type) {
     case 'move':
       instruments.note(chord[2] + 12, time, 0.05, 0.045, 'effect', {
-        wave: 'triangle',
-        attack: 0.002,
+        wave: ACTION_WAVE,
+        attack: ACTION_ATTACK_SECONDS,
         release: 0.045,
         pan: -0.2,
         cutoff: 4200,
@@ -120,7 +123,7 @@ export function scheduleEffect(
     case 'rotate':
       instruments.note(chord[3] + 12, time, 0.105, 0.065, 'effect', {
         wave: MELODY_WAVE,
-        attack: 0.002,
+        attack: ACTION_ATTACK_SECONDS,
         release: 0.095,
         pan: 0.25,
         cutoff: 4600,
@@ -129,16 +132,16 @@ export function scheduleEffect(
       break;
     case 'softdrop':
       instruments.note(chord[1] + 12, time, 0.035, 0.03, 'effect', {
-        wave: 'triangle',
-        attack: 0.002,
+        wave: ACTION_WAVE,
+        attack: ACTION_ATTACK_SECONDS,
         release: 0.03,
         cutoff: 2800,
       });
       break;
     case 'drop':
       instruments.note(chord[0] + 12, time, 0.12, 0.055, 'effect', {
-        wave: 'triangle',
-        attack: 0.002,
+        wave: ACTION_WAVE,
+        attack: ACTION_ATTACK_SECONDS,
         release: 0.11,
         cutoff: 3400,
         targetFrequency: frequencyForNote(chord[0] - 12),
@@ -147,8 +150,8 @@ export function scheduleEffect(
       break;
     case 'lock':
       instruments.note(chord[0] - 12, time, 0.14, 0.075, 'effect', {
-        wave: 'triangle',
-        attack: 0.002,
+        wave: ACTION_WAVE,
+        attack: ACTION_ATTACK_SECONDS,
         release: 0.13,
         cutoff: 700,
         targetFrequency: frequencyForNote(chord[0] - 19),
@@ -157,14 +160,14 @@ export function scheduleEffect(
       break;
     case 'hold':
       instruments.note(chord[1] + 12, time, 0.12, 0.065, 'effect', {
-        wave: 'triangle',
+        wave: ACTION_WAVE,
         attack: 0.003,
         release: 0.11,
         pan: -0.3,
         cutoff: 3800,
       });
       instruments.note(chord[2] + 12, time + 0.05, 0.16, 0.05, 'effect', {
-        wave: 'triangle',
+        wave: ACTION_WAVE,
         attack: 0.003,
         release: 0.15,
         pan: 0.3,

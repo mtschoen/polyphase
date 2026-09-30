@@ -27,7 +27,7 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 ## Feel every placement
 
 - Luminous beveled blocks, landing guide, hold slot and four upcoming pieces.
-- Fine, bright sparks and dust fan out on landing, with short trails on hard drops. White-hot clear beams and broad shockwaves burst beyond the board edges, with stronger screen shake for bigger clears. The landing guide stays readable through the effects.
+- Glowing sparks, white-hot centers, shards and dust fan out on landing, with short trails on hard drops. Clear beams and broad shockwaves burst beyond the board edges, with stronger screen shake for bigger clears. The landing guide stays readable through the effects.
 - A GPU-rendered orbital halo, moving aurora, stars and drifting geometry.
 - Three atmospheres: Eventide, Afterglow and Deep Blue, with matching original musical palettes.
 - Procedural stereo music with a short folk hook, thumping layered kicks, sub-bass, offbeat hats and kick-driven pumping. Intensity responds to progress, combos and charge.
@@ -63,9 +63,13 @@ Mode, pace and Fusion selection are locked during a run. Pause and choose **Back
 
 Each tier has its own original synthesized stinger, increasing sparks, shockwaves and screen shake. A line clear holds back the next piece for 0.36 seconds, plus 0.06 seconds per extra line, up to 0.66 seconds for six. This applies equally in Flow and Rush. Scoring happens immediately; the queue advances after the bright burst fades. Pausing freezes this gap, and taps during it do not accidentally drop or swap the next piece.
 
-Most clear sparks live for roughly half a second, with a few faint embers lasting less than a second. Landing sparks stay small but bright enough to register, and ordinary placements have no entry delay. The impact mix boosts particle count, particle radius, shake and shockwaves by 50%, with a stronger background pulse. Larger clears briefly duck the music to give their stinger room.
+Bright clear sparks fade before the next piece enters, with a few faint embers lasting less than a second. Landing sparks retain their glow for roughly 0.65 to 1 second, and ordinary placements have no entry delay. A clear replaces the preceding landing spray so the two bursts do not obscure the next piece. Larger clears briefly duck the music to give their stinger room.
 
-Open **Settings → Try explosion** to preview any tier without changing your board or score. **Spoken clear callouts** can be switched off separately; speech is skipped when the browser has no suitable English voice. Mute and master volume also apply to the announcer.
+**Settings → More juice** has independent particle density, particle size and screen shake sliders from **0% to 300%**. The tuned mix (previously 60% density, 60% size and 175% shake) is now **100%** on each slider. That saved mix keeps the same feel. Reset juice returns to these defaults. Zero density or size removes sparks and drop trails; zero shake stops camera movement. Reduced motion overrides effects while retaining your choices.
+
+Enter **Up, Up, Down, Down, Left, Right, Left, Right, B, A** outside an input to unlock the hidden **Juice lab**. Its sliders stay synchronized with Settings, and **Try landing** and **Try explosion** can be clicked repeatedly without reopening a menu. Choose any of the six clear tiers. Opening the lab pauses an active run; previews preserve your board and score. Close it with its X or Escape, then enter the code again to reopen it. Reloading hides the lab.
+
+Movement, rotation, soft drop, hard drop, landing and hold each have a distinct synthesized cue. Successful manual soft-drop steps tick; gravity and blocked drops stay silent. **Spoken clear callouts** can be switched off separately; speech is skipped when the browser has no suitable English voice. Mute and master volume also apply to the announcer.
 
 ## Familiar melody, unfamiliar steps
 

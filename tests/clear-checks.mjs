@@ -150,7 +150,7 @@ export async function checkClearEscalation(page) {
     assert.ok(tier.burst.visible > 100, 'Each real clear needs a visible burst');
     assert.ok(
       tier.entryDebris.visible < tier.burst.visible * 0.35,
-      'The next piece must arrive after the bright burst fades',
+      `${tier.difficulty} ${tier.lines}-line entry must follow the bright burst: ${tier.entryDebris.visible}/${tier.burst.visible} pixels remain`,
     );
     assert.equal(tier.faded.visible, 0, 'Clear debris must get out of the way promptly');
   }

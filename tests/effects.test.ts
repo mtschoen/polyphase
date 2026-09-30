@@ -146,11 +146,11 @@ describe('clear and landing effects', () => {
     const shake = frame.style.transform;
     effects.reset();
     paint.length = 0;
-    effects.setImpactSettings({ ...settings, particleDensity: 2 });
+    effects.setImpactSettings({ ...settings, particleDensity: 1.5 });
     effects.handle({ type: 'lock', cells }, 10);
     effects.render(0.01, 30, false);
     expect(paint.filter((mark) => mark.kind === 'core' || mark.kind === 'rectangle')).toHaveLength(
-      count * 2,
+      count * 1.5,
     );
     expect(paint.find((mark) => mark.kind === 'core')!.radius).toBe(radius);
     expect(frame.style.transform).toBe(shake);
@@ -159,14 +159,14 @@ describe('clear and landing effects', () => {
 
   it('resizes existing particles without changing their count or shake', () => {
     const { effects, frame } = setup();
-    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 1 });
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 0.5 });
     effects.handle({ type: 'lock', cells: [{ x: 3, y: 18, color: 0 }] }, 10);
     effects.render(0.01, 30, false);
     const paint = created[0].paint;
     const radii = paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius);
     const shake = frame.style.transform;
     paint.length = 0;
-    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 2 });
+    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleSize: 1 });
     effects.render(0, 30, false);
     expect(paint.filter((mark) => mark.kind === 'core').map((mark) => mark.radius)).toEqual(
       radii.map((radius) => radius * 2),
@@ -208,34 +208,38 @@ describe('clear and landing effects', () => {
     expect(count).toBeLessThanOrEqual(8000);
   });
 
-  it('immediately stops current shake and clears particles and trails when their sliders reach zero', () => {
-    const { effects, application, frame } = setup();
-    const cells = [{ x: 3, y: 18, color: 0 }];
-    effects.handle({ type: 'lock', cells }, 10);
-    effects.handle({ type: 'drop', cells, distance: 18 }, 10);
-    effects.render(0.01, 30, false);
-    expect(frame.style.transform).not.toBe('');
-    const paint = created[0].paint;
-    effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, screenShake: 0, particleDensity: 0 });
-    expect(frame.style.transform).toBe('');
-    expect(application.style.transform).toBe('');
-    paint.length = 0;
-    effects.render(0.01, 30, false);
-    expect(paint).toEqual([]);
-    effects.handle({ type: 'lock', cells }, 10);
-    effects.handle({ type: 'drop', cells, distance: 18 }, 10);
-    effects.render(0.01, 30, false);
-    expect(paint).toEqual([]);
-    effects.handle({ type: 'clear', amount: 1, cells }, 10);
-    effects.render(0.01, 30, false);
-    expect(paint.some((mark) => mark.kind === 'core')).toBe(false);
-    expect(created[0].context.ellipse).toHaveBeenCalled();
-  });
+  it.each(['particleDensity', 'particleSize'] as const)(
+    'immediately clears particles and trails at zero %s, with independent zero shake',
+    (key) => {
+      const { effects, application, frame } = setup();
+      const cells = [{ x: 3, y: 18, color: 0 }];
+      effects.handle({ type: 'lock', cells }, 10);
+      effects.handle({ type: 'drop', cells, distance: 18 }, 10);
+      effects.render(0.01, 30, false);
+      expect(frame.style.transform).not.toBe('');
+      const paint = created[0].paint;
+      effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, screenShake: 0, [key]: 0 });
+      expect(frame.style.transform).toBe('');
+      expect(application.style.transform).toBe('');
+      paint.length = 0;
+      effects.render(0.01, 30, false);
+      expect(paint).toEqual([]);
+      effects.handle({ type: 'lock', cells }, 10);
+      effects.handle({ type: 'drop', cells, distance: 18 }, 10);
+      effects.render(0.01, 30, false);
+      expect(paint).toEqual([]);
+      effects.handle({ type: 'clear', amount: 1, cells }, 10);
+      effects.render(0.01, 30, false);
+      expect(paint.some((mark) => mark.kind === 'core')).toBe(false);
+      expect(created[0].context.ellipse).toHaveBeenCalled();
+    },
+  );
 
   it.each([1, 6])(
     'keeps clear %s bright inside the clear pause and fully expires by one second',
     (amount) => {
       const { effects } = setup(seededRandom());
+      effects.setImpactSettings({ ...DEFAULT_IMPACT_SETTINGS, particleDensity: 1 });
       effects.handle({ type: 'clear', amount, cells: [{ x: 3, y: 18, color: 0 }] }, 10);
       effects.render(0.2, 30, false);
       const paint = created[0].paint;

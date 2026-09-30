@@ -11,41 +11,6 @@
   color: #f1d58e;
   border-color: #f1d58e55;
 }
-.effects-preview {
-  border-top: 1px solid var(--line);
-  padding-top: 18px;
-  margin-bottom: 20px;
-}
-.effects-preview > label {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 1px;
-  color: var(--accent);
-  margin-bottom: 9px;
-}
-.effects-preview select,
-.effects-preview button {
-  border-radius: 5px;
-  padding: 10px;
-  font: inherit;
-  font-size: 11px;
-}
-.effects-preview select {
-  width: 60%;
-  color: #eafff5;
-  background: #112b23;
-  border: 1px solid var(--line);
-}
-.effects-preview button {
-  width: 37%;
-  margin-left: 2%;
-  color: #0d2d23;
-  background: var(--accent);
-}
-.effects-preview p {
-  font-size: 9px;
-  margin-bottom: 0;
-}
 #callout {
   inset: 35% 8px auto;
   z-index: 2;

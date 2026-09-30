@@ -89,7 +89,7 @@ export class BoardEffects {
 
   setImpactSettings(settings: ImpactSettings): void {
     this.impactSettings = normalizeImpactSettings(settings);
-    if (this.impactSettings.particleDensity === 0) {
+    if (this.impactSettings.particleDensity === 0 || this.impactSettings.particleSize === 0) {
       this.particles = [];
       this.trails = [];
       this.context.clearRect(0, 0, this.width, this.height);
@@ -116,12 +116,15 @@ export class BoardEffects {
       return;
     // Bound work at event ingestion as well as retained particles.
     const cells = event.cells.slice(0, Math.min(256, Math.max(1, width) * 6));
-    const maximumParticles = Math.min(
-      MAXIMUM_PARTICLES,
-      Math.round(Math.max(1200, width * 420) * this.impactSettings.particleDensity),
-    );
+    const maximumParticles =
+      this.impactSettings.particleSize === 0
+        ? 0
+        : Math.min(
+            MAXIMUM_PARTICLES,
+            Math.round(Math.max(1200, width * 420) * this.impactSettings.particleDensity),
+          );
     if (event.type === 'drop') {
-      if (this.impactSettings.particleDensity > 0) this.addDropTrail(cells, event.distance ?? 0);
+      if (maximumParticles > 0) this.addDropTrail(cells, event.distance ?? 0);
     } else if (event.type === 'lock') {
       this.landingShake = Math.min(2.5 * IMPACT_SCALE, this.landingShake + 1.6 * IMPACT_SCALE);
       this.emitParticles(cells, null, maximumParticles);

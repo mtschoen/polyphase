@@ -16,6 +16,13 @@ import { InputController } from './input';
 import { loadSettings, saveSettings, readBest, saveBest } from './storage';
 import { Announcer } from './announcer';
 import { GameFeedback } from './feedback';
+import { JuiceLab } from './juice-lab';
+import {
+  DEFAULT_IMPACT_SETTINGS,
+  IMPACT_CONTROLS,
+  impactPercent,
+  impactValue,
+} from './impact-settings';
 
 createInterface();
 const element = <T extends Element = HTMLElement>(selector: string): T =>
@@ -56,6 +63,7 @@ function applySettings(): void {
   universe.setReducedMotion(settings.reducedMotion);
   renderer.reducedMotion = settings.reducedMotion;
   renderer.showGhost = settings.ghost;
+  applyImpactSettings();
   document.body.classList.toggle('reduced-motion', settings.reducedMotion);
   document.body.classList.toggle('playing', game.status === 'playing' && !settings.muted);
   document.documentElement.style.setProperty('--accent', THEMES[settings.theme].primary);
@@ -78,6 +86,22 @@ function applySettings(): void {
     button.classList.toggle('selected', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
+}
+function applyImpactSettings(): void {
+  renderer.setImpactSettings(settings);
+  juiceLab.setSettings(settings, settings.reducedMotion);
+  for (const { key } of IMPACT_CONTROLS) {
+    const value = impactPercent(key, settings[key]);
+    element<HTMLInputElement>(`#impact-${key}`).value = String(value);
+    setText(`#impact-${key}-value`, `${value}%`);
+  }
+  element<HTMLFieldSetElement>('#impact-controls').disabled = settings.reducedMotion;
+  setText(
+    '#impact-hint',
+    settings.reducedMotion
+      ? 'Reduced motion is on. Turn it off to preview your sparks and shake.'
+      : 'Tune the sparks and shake for landings and line clears.',
+  );
 }
 function updateTrack(): void {
   const track = soundtrackForSizes(game.pieceSizes);
@@ -160,6 +184,22 @@ const input = new InputController({
   start: () => void start(),
   isPlaying: () => game.status === 'playing',
   isReady: () => game.status === 'ready' || game.status === 'over',
+});
+const juiceLab = new JuiceLab({
+  onOpen: () => {
+    if (game.status === 'playing') pause();
+    input.clear();
+    document
+      .querySelectorAll<HTMLDialogElement>('dialog[open]')
+      .forEach((dialog) => dialog.close());
+  },
+  onImpactChange: (key, value) => {
+    settings[key] = value;
+    applyImpactSettings();
+    persistSettings();
+  },
+  onReset: resetImpacts,
+  onPreview: (kind, lines) => void previewImpact(kind === 'landing', lines),
 });
 function resonate(): void {
   if (game.status !== 'playing') return;
@@ -303,6 +343,19 @@ element('#volume').addEventListener('input', () => {
   applySettings();
   persistSettings();
 });
+for (const { key } of IMPACT_CONTROLS) {
+  element(`#impact-${key}`).addEventListener('input', () => {
+    settings[key] = impactValue(key, Number(element<HTMLInputElement>(`#impact-${key}`).value));
+    applyImpactSettings();
+    persistSettings();
+  });
+}
+function resetImpacts(): void {
+  Object.assign(settings, DEFAULT_IMPACT_SETTINGS);
+  applyImpactSettings();
+  persistSettings();
+}
+element('#reset-impacts').addEventListener('click', resetImpacts);
 element('#reduced-motion').addEventListener('change', () => {
   settings.reducedMotion = element<HTMLInputElement>('#reduced-motion').checked;
   applySettings();
@@ -318,9 +371,9 @@ element('#announcer').addEventListener('change', () => {
   applySettings();
   persistSettings();
 });
-element('#preview-effects').addEventListener('click', async () => {
-  const lines = Number(element<HTMLSelectElement>('#preview-clear').value);
-  element<HTMLDialogElement>('#settings-dialog').close();
+async function previewImpact(landing: boolean, lines: number): Promise<void> {
+  if (game.status === 'playing') pause();
+  input.clear();
   try {
     await audio.start();
   } catch {
@@ -328,8 +381,9 @@ element('#preview-effects').addEventListener('click', async () => {
   }
   renderer.reset();
   feedback.reset();
-  feedback.preview(lines, game.width, game.height, performance.now());
-});
+  if (landing) feedback.previewLanding(game.width, game.height, performance.now());
+  else feedback.preview(lines, game.width, game.height, performance.now());
+}
 element('#ghost').addEventListener('change', () => {
   settings.ghost = element<HTMLInputElement>('#ghost').checked;
   applySettings();
@@ -357,6 +411,7 @@ window.addEventListener('pagehide', (event) => {
   universe.dispose();
   renderer.dispose();
   announcer.dispose();
+  juiceLab.dispose();
 });
 applySettings();
 syncFusionOptions();

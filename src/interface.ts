@@ -1,5 +1,5 @@
 import { PIECE_SIZES, PURE_MODES, THEMES, type GameStatus } from './game/types';
-import { CLEAR_TIERS } from './clear-tiers';
+import { IMPACT_CONTROLS, IMPACT_PERCENT_RANGE } from './impact-settings';
 
 const icons = {
   sound: '<path d="m11 5-6 4H2v6h3l6 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
@@ -58,9 +58,34 @@ export function createInterface(): void {
     </main>
     <footer class="site-footer"><div class="now-playing"><div class="equalizer"><i></i><i></i><i></i><i></i><i></i></div><div><span>ORIGINAL SOUND EXPERIENCE</span><strong id="track-name">Eventide <b>·</b> 5/4</strong></div></div><div class="theme-picker" role="group" aria-label="Atmosphere">${THEMES.map((theme, index) => `<button data-theme="${index}" class="theme-dot ${index === 0 ? 'selected' : ''}" style="--swatch:${theme.primary}" aria-label="${theme.name} atmosphere" aria-pressed="${index === 0}"></button>`).join('')}<span id="theme-name">EVENTIDE</span></div><div class="headphone-note">◉ <span>Better with headphones</span></div></footer>
     <div class="keyboard-strip"><span><kbd>←</kbd><kbd>→</kbd> move</span><span><kbd>↑</kbd> rotate</span><span><kbd>↓</kbd> soft drop</span><span><kbd class="wide-key">SPACE</kbd> hard drop</span><span><kbd>C</kbd> hold</span><span><kbd>P</kbd> pause</span></div>
-    <dialog id="settings-dialog"><div class="dialog-heading"><span class="eyebrow">MAKE SPACE FOR YOURSELF</span><button data-close class="close-button" aria-label="Close settings">×</button></div><h2>Your atmosphere.</h2><label class="setting-row" for="volume">Master volume <output id="volume-value">60%</output></label><input type="range" id="volume" min="0" max="100" value="60"/><label class="setting-toggle">Reduced motion <input type="checkbox" id="reduced-motion"/></label><p class="setting-hint">Opt in to a calmer universe without shake or particle bursts. Full effects are on by default.</p><label class="setting-toggle">Spoken clear callouts <input type="checkbox" id="announcer" checked/></label><p class="setting-hint">Optional announcer, when a voice is available in your browser.</p><div class="effects-preview"><label for="preview-clear">TRY A LINE-CLEAR EXPLOSION</label><select id="preview-clear">${CLEAR_TIERS.map((tier) => `<option value="${tier.lines}">${tier.lines} ${tier.lines === 1 ? 'line' : 'lines'}: ${tier.label}</option>`).join('')}</select><button id="preview-effects">Try explosion</button><p>Preview only. Your score and board stay the same.</p></div><label class="setting-toggle">Landing guide <input type="checkbox" id="ghost" checked/></label><p class="setting-hint">See exactly where your next piece will land.</p><p class="dialog-bottom">Your settings and personal bests stay on this device.</p></dialog>
+    ${settingsDialog()}
     <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">A FAMILIAR RHYTHM, REMIXED</span><button data-close class="close-button" aria-label="Close help">×</button></div><h2>A few more squares.<br>A lot more possibility.</h2><p>Fit the falling shapes together. Fill a complete horizontal line to clear it. Keep the stack below the top.</p><div class="help-grid"><span>Move</span><kbd>← → / A D</kbd><span>Rotate clockwise</span><kbd>↑ / X / E</kbd><span>Rotate counterclockwise</span><kbd>Z / Q</kbd><span>Soft / hard drop</span><kbd>↓ / SPACE</kbd><span>Hold a piece</span><kbd>C / SHIFT</kbd><span>Resonance</span><kbd>ENTER</kbd><span>Pause</span><kbd>P / ESC</kbd><span>Mute / fullscreen</span><kbd>M / F</kbd></div><p><strong>Make some space.</strong> Each placement and cleared line charges Resonance. At 100%, press Enter to sweep away the bottom four rows.</p><p class="dialog-bottom">Choose any pure size from one to six. Fusion lets you mix your own sizes with equal chances for each. Mirrored shapes are included, including all seven classic four-square pieces.</p></dialog>
     <div id="toast" role="status"></div>`;
+}
+
+function settingsDialog(): string {
+  return `<dialog id="settings-dialog">
+    <div class="dialog-heading"><span class="eyebrow">MAKE IT YOURS</span><button data-close class="close-button" aria-label="Close settings">×</button></div>
+    <h2>Your atmosphere.</h2>
+    <label class="setting-row" for="volume">Master volume <output id="volume-value">60%</output></label>
+    <input type="range" id="volume" min="0" max="100" value="60"/>
+    <fieldset class="impact-controls" id="impact-controls"><legend>MORE JUICE</legend>
+      ${IMPACT_CONTROLS.map(({ key, label }) => {
+        const { minimum, maximum, step } = IMPACT_PERCENT_RANGE;
+        return `<div class="setting-row"><label for="impact-${key}">${label}</label><output id="impact-${key}-value" for="impact-${key}">100%</output></div>
+          <input type="range" id="impact-${key}" min="${minimum}" max="${maximum}" step="${step}" value="100" aria-describedby="impact-hint"/>`;
+      }).join('')}
+      <button id="reset-impacts" class="text-button" type="button">Reset juice</button>
+    </fieldset>
+    <p class="setting-hint" id="impact-hint">Tune the sparks and shake for landings and line clears.</p>
+    <label class="setting-toggle">Reduced motion <input type="checkbox" id="reduced-motion"/></label>
+    <p class="setting-hint">Turns off particles and shake while keeping your juice settings.</p>
+    <label class="setting-toggle">Spoken clear callouts <input type="checkbox" id="announcer" checked/></label>
+    <p class="setting-hint">Optional announcer, when a voice is available in your browser.</p>
+    <label class="setting-toggle">Landing guide <input type="checkbox" id="ghost" checked/></label>
+    <p class="setting-hint">See exactly where your next piece will land.</p>
+    <p class="dialog-bottom">Your settings and personal bests stay on this device.</p>
+  </dialog>`;
 }
 
 export function renderOverlay(status: GameStatus, score: number): void {

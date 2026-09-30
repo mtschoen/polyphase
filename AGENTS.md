@@ -20,6 +20,7 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `src/universe.ts`: Three.js animated cosmic environment.
 - `src/renderer.ts`, `src/effects.ts`: board drawing and unclipped gameplay particles.
 - `src/main.ts`, `src/interface.ts`, `src/input.ts`, `src/storage.ts`: UI, controls, persistence and game loop.
+- `src/impact-settings.ts`, `src/juice-lab.ts`: normalized impact controls and the hidden Konami preview panel. Stored multipliers stay absolute; percentages are relative to the tuned defaults.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
 
 Inject random sources and advance simulation time explicitly in tests. No wall-clock assertions.

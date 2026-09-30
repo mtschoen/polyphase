@@ -11,7 +11,7 @@ export const DEFAULT_IMPACT_SETTINGS: Readonly<ImpactSettings> = {
   screenShake: 1.75,
 };
 
-export const IMPACT_PERCENT_RANGE = { minimum: 0, maximum: 300, step: 5 } as const;
+export const IMPACT_PERCENT_RANGE = { minimum: 0, maximum: 300, step: 1 } as const;
 
 export const IMPACT_CONTROLS: readonly {
   key: keyof ImpactSettings;

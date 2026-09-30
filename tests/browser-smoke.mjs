@@ -2,6 +2,8 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { checkModeOptions } from './options-checks.mjs';
+import { checkImpactOptions } from './impact-options-checks.mjs';
+import { checkJuiceLab } from './juice-lab-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -30,6 +32,12 @@ try {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Spoken clear callouts', { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Close settings' }).click();
+  await checkImpactOptions(page);
+  checks.push('Normalized impact sliders, keyboard control, saved mix and reduced motion');
+  await checkJuiceLab(page);
+  checks.push(
+    'Hidden Konami lab, repeatable previews, synchronized sliders, keyboard isolation and mobile fit',
+  );
   const clearNames = [
     'POP!',
     'DOUBLE TROUBLE!',
@@ -39,7 +47,6 @@ try {
     'HEXAGEDDON!',
   ];
   for (const [index, name] of clearNames.entries()) {
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.locator('#preview-clear').selectOption(String(index + 1));
     await page.getByRole('button', { name: 'Try explosion', exact: true }).click();
     await page.waitForFunction(
@@ -50,6 +57,7 @@ try {
     if (index === 5)
       await page.screenshot({ path: 'artifacts/polyphase-hexageddon.png', fullPage: true });
   }
+  await page.getByRole('button', { name: 'Close juice lab', exact: true }).click();
   checks.push('Full effects default despite OS preference; all six named previews preserve score');
   await page.screenshot({ path: 'artifacts/polyphase-menu.png', fullPage: true });
   checks.push('Menu, GPU atmosphere, fonts and interface loaded');

@@ -1,6 +1,11 @@
 import { PIECE_SIZES, type PieceSize } from './game/types';
+import {
+  DEFAULT_IMPACT_SETTINGS,
+  normalizeImpactSettings,
+  type ImpactSettings,
+} from './impact-settings';
 
-export interface Settings {
+export interface Settings extends ImpactSettings {
   volume: number;
   muted: boolean;
   reducedMotion: boolean;
@@ -10,6 +15,7 @@ export interface Settings {
   announcer: boolean;
 }
 const defaults: Settings = {
+  ...DEFAULT_IMPACT_SETTINGS,
   volume: 0.6,
   muted: false,
   reducedMotion: false,
@@ -27,6 +33,7 @@ export function loadSettings(): Settings {
       (size) => Array.isArray(value.fusionSizes) && value.fusionSizes.includes(size),
     );
     return {
+      ...normalizeImpactSettings(value),
       volume:
         typeof value.volume === 'number' && Number.isFinite(value.volume)
           ? Math.min(1, Math.max(0, value.volume))

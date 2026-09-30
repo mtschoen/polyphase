@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { checkParticles } from './particle-checks.mjs';
 import { checkClearEscalation } from './clear-checks.mjs';
 import { checkClubPump, checkOutputGain } from './club-checks.mjs';
+import { checkActionAudio } from './action-audio-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -95,6 +96,7 @@ try {
   const clearEscalation = await checkClearEscalation(page);
   const clubPump = await checkClubPump(page);
   const outputGain = await checkOutputGain(page);
+  const actionAudio = await checkActionAudio(page);
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify(
@@ -107,6 +109,7 @@ try {
         clearEscalation,
         clubPump,
         outputGain,
+        actionAudio,
         browserErrors: errors,
       },
       null,
