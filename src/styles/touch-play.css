@@ -1,0 +1,205 @@
+@media (max-width: 900px), (pointer: coarse) {
+  .header-actions .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+  .touch-controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 12px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .touch-controls button {
+    min-width: 44px;
+    min-height: 48px;
+    touch-action: none;
+    border: 1px solid #6f9c7b55;
+    border-radius: 8px;
+    background: #183526e8;
+    font-size: 21px;
+  }
+  .touch-controls button:active {
+    background: #397859;
+    border-color: var(--accent);
+  }
+  .touch-controls [data-action='left'] {
+    order: 1;
+  }
+  .touch-controls [data-action='rotate'] {
+    order: 2;
+  }
+  .touch-controls [data-action='right'] {
+    order: 3;
+  }
+  .touch-controls [data-action='hold'] {
+    order: 4;
+  }
+  .touch-controls [data-action='down'] {
+    order: 5;
+  }
+  .touch-controls [data-action='drop'] {
+    order: 6;
+  }
+  .touch-controls button:first-child,
+  .touch-controls button:last-child {
+    font-size: 10px;
+    letter-spacing: 0.6px;
+  }
+  .in-run .journey,
+  .in-run .site-footer,
+  .in-run .keyboard-strip {
+    display: none;
+  }
+  .in-run .experience {
+    grid-template-columns: minmax(0, 1fr) 92px;
+    gap: 10px;
+    max-width: 650px;
+    margin: 0 auto;
+    padding: 5px 12px 12px;
+  }
+  .in-run .game-section {
+    width: 100%;
+    min-width: 0;
+  }
+  .in-run .board-frame {
+    width: min(
+      100%,
+      calc((100dvh - 259px - env(safe-area-inset-bottom, 0px)) * var(--board-ratio) + 12px)
+    );
+    margin: 0 auto;
+    padding: 5px;
+  }
+  .in-run #board {
+    height: auto;
+    aspect-ratio: var(--board-ratio);
+  }
+  .in-run .site-header {
+    height: 56px;
+  }
+  .in-run .telemetry {
+    padding-top: 30px;
+  }
+  .in-run #pause {
+    width: 44px;
+    height: 44px;
+  }
+  .in-run .board-heading {
+    height: 44px;
+  }
+  .in-run .board-heading #game-state {
+    display: none;
+  }
+}
+@media (max-width: 540px) {
+  #fullscreen {
+    display: none;
+  }
+  .header-actions {
+    gap: 0;
+  }
+}
+@media (max-width: 900px) and (max-height: 650px) {
+  .in-run .hold-panel small,
+  .in-run .next-item:nth-child(n + 5) {
+    display: none;
+  }
+  .in-run .hold-panel > canvas {
+    height: 30px;
+  }
+  .in-run .run-stats {
+    margin: 8px 0;
+    padding: 8px 0;
+  }
+  .in-run .resonance {
+    min-height: 44px;
+    margin-top: 8px;
+  }
+}
+@media (max-width: 370px) {
+  .site-header {
+    margin: 0 10px;
+  }
+  .wordmark {
+    font-size: 12px;
+    letter-spacing: 1px;
+    gap: 6px;
+  }
+  .header-actions .icon-button {
+    width: 44px;
+  }
+  .in-run .experience {
+    padding-inline: 10px;
+    grid-template-columns: minmax(0, 1fr) 80px;
+    gap: 8px;
+  }
+}
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .in-run .site-header {
+    height: 46px;
+  }
+  .in-run .experience {
+    max-width: 760px;
+    grid-template-columns: minmax(0, 1fr) 115px;
+  }
+  .in-run .game-section {
+    display: grid;
+    grid-template-columns: auto minmax(160px, 230px);
+    gap: 0 18px;
+    justify-content: center;
+  }
+  .in-run .board-heading {
+    grid-column: 1 / -1;
+  }
+  .in-run .board-frame {
+    grid-column: 1;
+    grid-row: 2;
+    width: calc((100dvh - 136px) * var(--board-ratio) + 12px);
+  }
+  .in-run .touch-controls {
+    grid-column: 2;
+    grid-row: 2;
+    align-content: center;
+    margin: 0;
+  }
+  .in-run .board-foot {
+    grid-column: 1;
+  }
+  .in-run .telemetry {
+    padding-top: 5px;
+  }
+  .in-run #score {
+    font-size: 23px;
+    margin: 4px 0;
+  }
+  .in-run .best {
+    display: none;
+  }
+  .in-run .run-stats strong {
+    font-size: 20px;
+    margin-top: 2px;
+  }
+  .in-run .next-item:nth-child(n + 4),
+  .in-run .hold-panel small {
+    display: none;
+  }
+  .in-run .run-stats {
+    margin: 8px 0;
+    padding: 6px 0;
+  }
+  .in-run .piece-panel {
+    padding: 6px;
+  }
+  .in-run .next-item canvas {
+    height: 25px;
+  }
+  .in-run .hold-panel > canvas {
+    height: 30px;
+  }
+  .in-run .resonance {
+    margin-top: 8px;
+  }
+}

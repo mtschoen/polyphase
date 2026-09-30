@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { checkModeOptions } from './options-checks.mjs';
 import { checkImpactOptions } from './impact-options-checks.mjs';
 import { checkJuiceLab } from './juice-lab-checks.mjs';
+import { checkLeaderboard } from './leaderboard-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -74,6 +75,9 @@ try {
   checks.push(
     'All size options, custom 3+5+6 mix, nonempty selection, record configuration and persistence',
   );
+  await page.getByRole('button', { name: 'Leaderboard', exact: true }).click();
+  await page.getByLabel('Player name', { exact: true }).fill('NIGHT OWL');
+  await page.getByRole('button', { name: 'Close leaderboard', exact: true }).click();
   for (const mode of ['monotris', 'ditris', 'tritris', 'tetris', 'pentris', 'sextris', 'fusion']) {
     await page.locator(`[data-mode="${mode}"]`).click();
     await page.getByRole('button', { name: 'Enter the flow' }).click();
@@ -94,6 +98,18 @@ try {
       await page.keyboard.press('Space');
     }
     await page.getByRole('button', { name: 'One more journey' }).waitFor();
+    const completedScore = Number(await page.locator('#score').textContent());
+    await page.getByRole('button', { name: 'View leaderboard', exact: true }).click();
+    const firstRow = page.locator('#leaderboard-entries tr').first();
+    assert.match(await firstRow.textContent(), /NIGHT OWL/);
+    assert.equal(
+      Number((await firstRow.locator('td').nth(2).textContent()).replaceAll(',', '')),
+      completedScore,
+    );
+    assert.equal(await page.locator('#leaderboard-entries tr').count(), 1);
+    if (mode === 'fusion')
+      await page.screenshot({ path: 'artifacts/polyphase-leaderboard.png', fullPage: true });
+    await page.getByRole('button', { name: 'Close leaderboard', exact: true }).click();
     const best = await page.locator('#best').textContent();
     assert.ok(Number(best.replaceAll(',', '')) > 0);
     if (mode === 'fusion')
@@ -105,6 +121,25 @@ try {
     await page.getByRole('button', { name: 'Back to frequencies' }).click();
     checks.push(`${mode}: move, rotate, hold, drop, pause/resume, top-out, personal best, menu`);
   }
+  await page.locator('[data-mode="monotris"]').click();
+  await page.getByRole('button', { name: 'Enter the flow' }).click();
+  await page.waitForFunction(() => document.querySelector('#overlay').hidden);
+  // Top out and restart within one JavaScript turn, before the game loop can save the run.
+  await page.evaluate(() => {
+    for (let index = 0; index < 55; index++) {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }));
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }));
+    }
+  });
+  await page.waitForFunction(() => document.querySelector('#score').textContent === '000000');
+  await page.getByRole('button', { name: 'Leaderboard', exact: true }).click();
+  assert.equal(await page.locator('#leaderboard-entries tr').count(), 2);
+  await page.getByRole('button', { name: 'Close leaderboard', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to frequencies' }).click();
+  await checkLeaderboard(page);
+  checks.push(
+    'Completed runs save once to their mode/mix and pace; local leaderboard names, filters and persistence',
+  );
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Reduced motion', { exact: true }).check();
   await page.getByLabel('Landing guide', { exact: true }).uncheck();

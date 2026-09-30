@@ -17,6 +17,7 @@ import { loadSettings, saveSettings, readBest, saveBest } from './storage';
 import { Announcer } from './announcer';
 import { GameFeedback } from './feedback';
 import { JuiceLab } from './juice-lab';
+import { LeaderboardPanel } from './leaderboard-panel';
 import {
   DEFAULT_IMPACT_SETTINGS,
   IMPACT_CONTROLS,
@@ -42,6 +43,8 @@ let best = readBest(game.recordKey, difficulty);
 let toastTimer = 0;
 let starting = false;
 let savedScore = -1;
+const runSession = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+let runNumber = 0;
 
 function toast(message: string): void {
   setText('#toast', message);
@@ -132,6 +135,7 @@ async function fullscreen(): Promise<void> {
 }
 async function start(): Promise<void> {
   if (starting) return;
+  saveCompletedRun();
   starting = true;
   try {
     await audio.start();
@@ -139,6 +143,7 @@ async function start(): Promise<void> {
     toast('Audio is unavailable. You can still enjoy the game.');
   }
   game.start();
+  runNumber++;
   feedback.reset();
   renderer.reset();
   input.clear();
@@ -146,6 +151,7 @@ async function start(): Promise<void> {
   starting = false;
   if (document.hidden || document.querySelector('dialog[open]')) game.setPaused(true);
   syncStatus();
+  if (window.matchMedia('(max-width: 900px), (pointer: coarse)').matches) window.scrollTo(0, 0);
 }
 function pause(): void {
   if (game.status !== 'playing' && game.status !== 'paused') return;
@@ -155,6 +161,7 @@ function pause(): void {
   syncStatus();
 }
 function menu(): void {
+  saveCompletedRun();
   input.clear();
   feedback.reset();
   game = new GameEngine(mode, difficulty, Math.random, settings.fusionSizes);
@@ -201,6 +208,17 @@ const juiceLab = new JuiceLab({
   onReset: resetImpacts,
   onPreview: (kind, lines) => void previewImpact(kind === 'landing', lines),
 });
+const leaderboard = new LeaderboardPanel({
+  onOpen: () => {
+    if (game.status === 'playing') pause();
+    input.clear();
+  },
+  onStorageError: () =>
+    toast('Scores are available for this session; this browser could not save them.'),
+});
+function openLeaderboard(): void {
+  leaderboard.open(game.recordKey, game.difficulty);
+}
 function resonate(): void {
   if (game.status !== 'playing') return;
   if (game.charge < 100) {
@@ -223,6 +241,7 @@ function syncStatus(): void {
     ],
   );
   const inRun = game.status === 'playing' || game.status === 'paused';
+  document.body.classList.toggle('in-run', game.status !== 'ready');
   document
     .querySelectorAll<HTMLButtonElement | HTMLInputElement>(
       '[data-mode], [data-difficulty], [data-fusion-size]',
@@ -235,10 +254,22 @@ function syncStatus(): void {
     'aria-label',
     game.status === 'paused' ? 'Resume game' : 'Pause game',
   );
+  saveCompletedRun();
+}
+function saveCompletedRun(): void {
   if (game.status === 'over' && savedScore !== game.score) {
+    leaderboard.recordRun({
+      id: `${runSession}-${runNumber}`,
+      recordKey: game.recordKey,
+      difficulty: game.difficulty,
+      score: game.score,
+      lines: game.lines,
+      level: game.level,
+      duration: game.elapsed,
+    });
     if (game.score > best) {
       best = game.score;
-      if (!saveBest(game.recordKey, difficulty, best))
+      if (!saveBest(game.recordKey, game.difficulty, best))
         toast('New personal best! This browser could not save it.');
       else toast('A new personal best. Beautifully played.');
     }
@@ -296,6 +327,7 @@ element('#overlay').addEventListener('click', (event) => {
   if (button?.dataset.overlayAction === 'start') void start();
   if (button?.dataset.overlayAction === 'resume') pause();
   if (button?.dataset.overlayAction === 'menu') menu();
+  if (button?.dataset.overlayAction === 'leaderboard') openLeaderboard();
 });
 document
   .querySelectorAll<HTMLElement>('[data-mode]')
@@ -314,6 +346,7 @@ document.querySelectorAll<HTMLElement>('[data-difficulty]').forEach((button) =>
   }),
 );
 element('#mute').addEventListener('click', mute);
+element('#leaderboard').addEventListener('click', openLeaderboard);
 element('#fullscreen').addEventListener('click', () => void fullscreen());
 element('#pause').addEventListener('click', pause);
 element('#resonance').addEventListener('click', resonate);
@@ -412,6 +445,8 @@ window.addEventListener('pagehide', (event) => {
   renderer.dispose();
   announcer.dispose();
   juiceLab.dispose();
+  input.dispose();
+  leaderboard.dispose();
 });
 applySettings();
 syncFusionOptions();

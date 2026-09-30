@@ -15,5 +15,10 @@ if not exist "node_modules\vite\bin\vite.js" (
   )
 )
 start "" "http://127.0.0.1:5173"
-call npm run dev
+if /i "%~1"=="lan" (
+  echo Open one of the Network addresses below on your phone using the same local network.
+  call npm run dev:lan
+) else (
+  call npm run dev
+)
 if errorlevel 1 pause

@@ -8,6 +8,8 @@ const icons = {
     '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .5-1.5 1-1.5 2M12 16h.01"/>',
   pause: '<path d="M8 5v14M16 5v14"/>',
+  trophy:
+    '<path d="M8 3h8v6a4 4 0 0 1-8 0V3Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 1v6m-4 2h8"/>',
   arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
 };
 export function icon(name: keyof typeof icons): string {
@@ -21,6 +23,7 @@ export function createInterface(): void {
       <a class="wordmark" href="./" aria-label="Polyphase home"><span class="brand-shape"><i></i><i></i><i></i><i></i><i></i></span>POLYPHASE<span class="edition">VOL. 01</span></a>
       <div class="header-center"><span class="live-dot"></span> A FALLING-BLOCK ODYSSEY</div>
       <nav class="header-actions" aria-label="Game tools">
+        <button id="leaderboard" class="icon-button" title="Leaderboard" aria-label="Leaderboard">${icon('trophy')}</button>
         <button id="mute" class="icon-button" title="Toggle sound (M)" aria-label="Mute sound" aria-pressed="false">${icon('sound')}</button>
         <button id="help" class="icon-button" title="How to play" aria-label="How to play">${icon('help')}</button>
         <button id="fullscreen" class="icon-button" title="Fullscreen (F)" aria-label="Toggle fullscreen">${icon('expand')}</button>
@@ -130,6 +133,9 @@ export function renderOverlay(status: GameStatus, score: number): void {
   if (ready) append(content, 'small', 'start-hint', 'PRESS SPACE TO BEGIN');
   else
     append(content, 'button', 'text-button', 'Back to frequencies').dataset.overlayAction = 'menu';
+  if (status === 'over')
+    append(content, 'button', 'text-button', 'View leaderboard').dataset.overlayAction =
+      'leaderboard';
 }
 
 function append<Tag extends keyof HTMLElementTagNameMap>(

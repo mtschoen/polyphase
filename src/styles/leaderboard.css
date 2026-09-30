@@ -137,3 +137,14 @@
     padding: 10px 4px;
   }
 }
+@media (max-width: 900px), (pointer: coarse) {
+  #leaderboard-dialog input,
+  #leaderboard-dialog select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  #leaderboard-dialog .close-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

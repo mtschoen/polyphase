@@ -17,23 +17,43 @@ export class InputController {
   private held = new Map<string, number>();
   private horizontal = 0;
   private repeatTime = 0;
+  private pointers = new Map<number, string>();
+  private keys = new Map<string, string>();
+  private buttons: HTMLButtonElement[];
   constructor(private actions: Actions) {
     window.addEventListener('keydown', this.keyDown);
     window.addEventListener('keyup', this.keyUp);
     window.addEventListener('blur', this.clear);
-    document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
-      button.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        button.setPointerCapture(event.pointerId);
-        this.press(button.dataset.action!);
-      });
-      button.addEventListener('pointerup', () => this.release(button.dataset.action!));
-      button.addEventListener('pointercancel', () => this.release(button.dataset.action!));
-      button.addEventListener('lostpointercapture', () => this.release(button.dataset.action!));
+    this.buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-action]')];
+    this.buttons.forEach((button) => {
+      button.addEventListener('pointerdown', this.pointerDown);
+      button.addEventListener('pointerup', this.pointerUp);
+      button.addEventListener('pointercancel', this.pointerUp);
+      button.addEventListener('lostpointercapture', this.pointerUp);
     });
   }
+  private pointerDown = (event: PointerEvent): void => {
+    const button = event.currentTarget as HTMLButtonElement;
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    const action = button.dataset.action!;
+    this.pointers.set(event.pointerId, action);
+    this.press(action);
+  };
+  private pointerUp = (event: PointerEvent): void => {
+    const action = this.pointers.get(event.pointerId);
+    this.pointers.delete(event.pointerId);
+    if (action) this.releaseIfUnused(action);
+  };
   private keyDown = (event: KeyboardEvent): void => {
-    if (document.querySelector('dialog[open]') || event.target instanceof HTMLInputElement) return;
+    if (
+      document.querySelector('dialog[open]') ||
+      (event.target instanceof Element &&
+        event.target.closest(
+          'input, select, textarea, [contenteditable]:not([contenteditable="false"])',
+        ))
+    )
+      return;
     const key = event.code;
     const action = this.keyAction(key);
     if (!action || event.ctrlKey || event.metaKey || event.altKey) return;
@@ -49,12 +69,18 @@ export class InputController {
       this.actions.start();
       return;
     }
+    this.keys.set(key, action);
     this.press(action);
   };
   private keyUp = (event: KeyboardEvent): void => {
-    const action = this.keyAction(event.code);
-    if (action) this.release(action);
+    const action = this.keys.get(event.code);
+    this.keys.delete(event.code);
+    if (action) this.releaseIfUnused(action);
   };
+  private releaseIfUnused(action: string): void {
+    if ([...this.pointers.values(), ...this.keys.values()].includes(action)) return;
+    this.release(action);
+  }
   private keyAction(key: string): string | undefined {
     return (
       {
@@ -119,6 +145,8 @@ export class InputController {
   }
   clear = (): void => {
     this.held.clear();
+    this.keys.clear();
+    this.pointers.clear();
     this.horizontal = 0;
     this.actions.softDrop(false);
   };
@@ -128,6 +156,18 @@ export class InputController {
     while (this.repeatTime <= 0) {
       this.actions.move(this.horizontal);
       this.repeatTime += 0.055;
+    }
+  }
+  dispose(): void {
+    this.clear();
+    window.removeEventListener('keydown', this.keyDown);
+    window.removeEventListener('keyup', this.keyUp);
+    window.removeEventListener('blur', this.clear);
+    for (const button of this.buttons) {
+      button.removeEventListener('pointerdown', this.pointerDown);
+      button.removeEventListener('pointerup', this.pointerUp);
+      button.removeEventListener('pointercancel', this.pointerUp);
+      button.removeEventListener('lostpointercapture', this.pointerUp);
     }
   }
 }

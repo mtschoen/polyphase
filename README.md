@@ -6,6 +6,8 @@ An original falling-block arcade with every piece size from one to six squares, 
 
 Double-click **PLAY.bat**, then choose your frequency. With the local server running, open [Polyphase](http://127.0.0.1:5173). Use headphones for the original adaptive soundtrack.
 
+For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. During play, the board and large touch controls fit portrait or landscape; you can hold a direction while using another finger to rotate or drop. Audio starts with your first play gesture.
+
 ## Choose your pieces
 
 | Mode     | Squares per piece | Playable shapes   | Board                          |
@@ -31,7 +33,7 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 - A GPU-rendered orbital halo, moving aurora, stars and drifting geometry.
 - Three atmospheres: Eventide, Afterglow and Deep Blue, with matching original musical palettes.
 - Procedural stereo music with a short folk hook, thumping layered kicks, sub-bass, offbeat hats and kick-driven pumping. Intensity responds to progress, combos and charge.
-- Touch controls, fullscreen, local personal bests for each mode/pace, automatic pause when focus is lost, and reduced motion.
+- Multitouch controls, fullscreen, local rankings and personal bests for each mix/pace, automatic pause when focus is lost, and reduced motion.
 - Fonts, graphics and synthesized music and effects are bundled. No account, analytics or sampled recordings. Optional spoken callouts use an available browser voice.
 
 ## Controls
@@ -50,6 +52,12 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 
 Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** is an opt-in setting that suppresses animated particles and shake; an explicitly saved choice is respected. The **FULL FX / CALM FX** button below the board toggles it directly.
 
+## Your leaderboard
+
+Open the trophy button or **View leaderboard** after a game. Set your player name and browse the best ten completed runs for each pure mode or custom Fusion mix, separately for Flow and Rush. Rankings include score, lines, level, duration and date. The name selected when a run ends is saved with that run; previous names stay unchanged. Opening the leaderboard pauses active play.
+
+Rankings are stored in this browser on this device. They do not sync between computers, phones or different site addresses, and clearing site data removes them. Existing personal-best numbers remain available, but only newly completed runs populate the leaderboard. If storage is unavailable, rankings remain usable for the current session.
+
 ## Make some noise
 
 | Lines | Callout         |
@@ -66,6 +74,8 @@ Each tier has its own original synthesized stinger, increasing sparks, shockwave
 Bright clear sparks fade before the next piece enters, with a few faint embers lasting less than a second. Landing sparks retain their glow for roughly 0.65 to 1 second, and ordinary placements have no entry delay. A clear replaces the preceding landing spray so the two bursts do not obscure the next piece. Larger clears briefly duck the music to give their stinger room.
 
 **Settings → More juice** has independent particle density, particle size and screen shake sliders from **0% to 300%**. The tuned mix (previously 60% density, 60% size and 175% shake) is now **100%** on each slider. That saved mix keeps the same feel. Reset juice returns to these defaults. Zero density or size removes sparks and drop trails; zero shake stops camera movement. Reduced motion overrides effects while retaining your choices.
+
+Above 100% particle size, the effects layer lowers its sampling resolution to limit the cost of oversized glows. Particle counts, on-screen sizes, brightness and lifetimes stay the same, and the board and text remain sharp. Very large effects are slightly softer. Default-size rendering is unchanged.
 
 Enter **Up, Up, Down, Down, Left, Right, Left, Right, B, A** outside an input to unlock the hidden **Juice lab**. Its sliders stay synchronized with Settings, and **Try landing** and **Try explosion** can be clicked repeatedly without reopening a menu. Choose any of the six clear tiers. Opening the lab pauses an active run; previews preserve your board and score. Close it with its X or Escape, then enter the code again to reopen it. Reloading hides the lab.
 

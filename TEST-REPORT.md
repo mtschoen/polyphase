@@ -1,69 +1,85 @@
 # Polyphase verification
 
-Verified on 2026-09-30 against `0951cf4` plus the accompanying integration changes: restored landing glow, independent impact sliders, tuned percentages, stronger action cues and a hidden Konami Juice lab. Audio, visual rendering, normalization and panel integration received independent reviews. Coverage is best effort for an existing application with browser-driven modules; unit line coverage is 51.85%, down from 53.01% as the new UI adds browser-tested code outside the unit harness. Native browser checks are reported separately, not counted as unit coverage.
+| Field              | Result                                                                                              |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| Date               | 2026-09-30                                                                                          |
+| Git reference      | `5e04a6c` plus accompanying mobile and leaderboard integration changes                              |
+| Status             | PASS: build, unit suite, lint, formatting and native browser checks                                 |
+| Mode               | Best effort; prior unit line coverage 51.85%, current 57.98%                                        |
+| Unit tests         | 212 passed across 12 files; zero failures or skips                                                  |
+| Browser errors     | Zero in gameplay, media and mobile harnesses                                                        |
+| Independent review | Particle sampling, touch ownership, leaderboard persistence and completed-run finalization reviewed |
 
-## Results
+## Coverage
 
-| Check                                | Result                                                                  |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| TypeScript and production build      | Passed (`npm run build`)                                                |
-| ESLint                               | Passed (`npm run lint`)                                                 |
-| Prettier                             | Passed after formatting integrated files                                |
-| Unit tests                           | 183 passed across ten test files                                        |
-| Browser playthrough                  | All seven modes and custom 3+5+6 Fusion passed; no browser errors       |
-| Native Web Audio and rendering smoke | Passed: 18 action/theme cases, pumping, output boost and 12 real clears |
-| Independent code review              | Visuals, action cues, normalization and hidden panel reviewed           |
+Native browser checks are separate from unit coverage. No production source is excluded from the unit report.
 
-Browser checks covered movement, rotation, hold, hard drop, pause/resume, top-out, personal records and return to menu. Custom Fusion selection persisted across reload, rejected an empty selection, locked during play, changed the board size and meter label, and saved its own personal best. Settings, themes and mute also persisted. Focused native controls retained Space/Enter behavior, and a persisted page-hide event retained the renderer. The 390 by 844 layout had no horizontal overflow and usable touch controls. Desktop and mobile screenshots were inspected, including the 6/4 label and visible landing sparks.
+| Scope                 | Statements         | Branches          | Functions        | Lines              |
+| --------------------- | ------------------ | ----------------- | ---------------- | ------------------ |
+| All production source | 57.12% (1262/2209) | 61.19% (667/1090) | 57.73% (209/362) | 57.98% (1155/1992) |
+| Game rules and shapes | 100%               | 99.32%            | 100%             | 100%               |
+| Effects               | 96.68%             | 89.92%            | 95.23%           | 96.90%             |
+| Input                 | 81.48%             | 67.14%            | 100%             | 85.41%             |
+| Leaderboard data      | 96.05%             | 91.02%            | 100%             | 100%               |
+| Leaderboard panel     | 77.31%             | 43.63%            | 81.25%           | 84.61%             |
+| Audio engine          | 89.05%             | 81.42%            | 87.50%           | 93.69%             |
 
-New checks verified all impact defaults read 100%, every range spans 0-300%, and the saved raw 60/60/175 mix retains its values while reading 100/100/100. Keyboard endpoints, reset, reload persistence and reduced-motion disabling passed. The hidden lab rejected an incorrect code, opened with the full Konami sequence, stayed visible through repeated previews, synchronized sliders both ways with Settings, paused an active run, preserved native control behavior, closed with Escape or its button, reopened by code, and hid after reload. Desktop/mobile panel screenshots were inspected. Existing higher values are clamped to the new requested maxima.
+The main loop, board renderer, universe, interface, Juice lab and feedback coordinator retain zero unit coverage and receive native browser checks. Persistence and sound-effect paths retain partial unit coverage. This is not full application coverage.
 
-## Music and sound
+## Runtime checks
 
-The audio harness uses native AudioContext and an analyser. It observed nonzero music output for each pure size and custom 3+5+6, nonzero effect output, and silence after mute. A native OfflineAudioContext probe measured the melodic bus around two kicks: RMS fell from 0.707 to 0.152 on each kick and recovered to 0.702 and 0.709 between kicks. This verifies actual gain automation through the browser's audio graph, with finite output samples.
+| Check                               | Result                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Seven modes and custom 3+5+6 Fusion | Movement, rotation, hold, drop, pause/resume, topout, records and menu passed                                                             |
+| Local rankings                      | Completed score saved once in every mode; same-turn topout/restart retains the run                                                        |
+| Ranking persistence                 | Names, ordering, top-ten bounds, mix/pace scopes, duplicate IDs, corrupt/blocked storage, stale-tab merging and HTTP UUID fallback passed |
+| Settings and Juice lab              | Normalized defaults/ranges, saved mix, Konami unlock, previews, synchronization, keyboard behavior and persistence passed                 |
+| Native audio                        | Six meters, custom Fusion, mute, pumping, output boost and 18 action/theme cases passed                                                   |
+| Effects and entry timing            | Landing, drop trails, clear escalation, reduced motion, reset/disposal and 12 legal Flow/Rush clear cases passed                          |
+| Mobile layouts                      | 320x568, 390x844 and 844x390 passed without horizontal overflow or offscreen gameplay controls                                            |
+| Mobile input                        | Native touch movement, rotation, hold, soft/hard drop, simultaneous contacts, repeat, release and cancellation passed                     |
+| Touch targets                       | Gameplay, Resonance, Pause and visible toolbar controls meet 44x44 minimum                                                                |
+| Phone serving                       | LAN HTTP request returned 200; all mobile cases passed through the LAN address                                                            |
+| Visual inspection                   | Desktop leaderboard, phone leaderboard, portrait and landscape gameplay screenshots inspected                                             |
 
-The live analyser now taps final output after compression at 100% volume. Paired offline renders with deterministic noise verified a 1.5x RMS increase for all six sizes and three themes. These overlap dense opening music with Hexageddon at full volume and high intensity; final peaks were approximately 0.42 to 0.45, below clipping. Each probe retained 34 voices, avoiding the scheduling cap. This checks representative impact overlap, not every possible complete track or effect combination.
+Chromium on Windows was exercised. Physical Android/iOS devices, Safari, Firefox and the Windows double-click launcher were not independently exercised. The launcher's underlying LAN development-server command was exercised. Audio measurements verify actual browser output, not subjective speaker or headphone quality.
 
-Deterministic music tests verify exact short-loop repetition, stable harmony, meter-specific accents, whole-bar Fusion transitions, per-size phrase progress, 132-quarter-note tempo, bass register and theme changes. Monotris repeats eight one-beat bars; sizes two through six repeat four bars. Six-cell music uses six quarter beats, grouped 3+3. Independent full-arrangement scheduling probes across modes, themes and low/high energy found at most 24 scheduled music voices, including the layered kick, below the 48-voice limit.
+## Particle benchmark
 
-Audio graph tests cover melodic and echo routing through the pump, percussion bypass, pause/mute/volume/mode/theme reset, stinger ducking and disposal. A regression removes `cancelAndHoldAtTime` from the fake AudioParam to verify the portable automation path. Announcer tests cover voice choice, mute, volume, cancellation and disposal; speech availability and pronunciation depend on browser voices.
+Native Chrome measurements used a deterministic 3,528-particle six-line clear at 100% density and 300% size. Benchmarks ran separately from other browser checks. Default-size sampling is unchanged.
 
-Movement, rotation, soft drop, hard drop, lock and hold were rendered individually and over identical seeded energetic music in all three themes. All 18 action/theme cases produced finite samples, measurable isolated output and a measurable contribution to the music. The largest mixed peak was 0.5813 at full volume, below clipping; the smallest isolated RMS was 0.001770. Deterministic tests cover successful manual soft-drop emission, silent blocked/gravity steps, per-action cooldowns, mute and disposal.
+| Device pixel ratio | Baseline completed raster work | Adaptive sampling | Reduction |
+| ------------------ | ------------------------------ | ----------------- | --------- |
+| 1                  | 54.9 ms                        | 46.7 ms           | 14.9%     |
+| 2                  | 64.1 ms                        | 56.1 ms           | 12.5%     |
 
-## Particles and clear timing
+Completed-work measurements include a readback fence. The separate no-readback steady-frame cadence remained about 30.3 ms, so an overall FPS increase was not demonstrated by this stress test. Large effects use softer sampling; particle counts, logical sizes, additive brightness, fades and the board rendering remain unchanged. Default-density five-cell landing cadence was about 6.1 ms in the native benchmark. These are descriptive performance measurements, not test timing gates.
 
-The isolated effects layer produced 4,545 visible landing pixels at 0.05 seconds and 9,110 after approximately 0.167 seconds with the tuned defaults. Drop trails, isolated clears, Resonance, layering, pointer transparency, expiry, reset, disposal and reduced motion passed. Deterministic tests verify independent density, size and shake scaling; zero size/density remove existing sparks and trails and prevent new allocation; zero shake immediately clears transforms; retained particles stay bounded at 8,000.
+## Static checks
 
-Real legal one-through-six-line clears were exercised in both Flow and Rush. Every case held the queue and active piece during its 0.36 to 0.66 second entry gap, then spawned the expected next piece. Simulation time was advanced explicitly. Clear bursts increased from approximately 20,796 visible pixels for one line to 123,271 for six in Flow; Rush measured approximately 20,538 to 125,437. Fewer than 1% of peak visible pixels remained when the next piece entered, and all effects had expired by 1.5 simulated seconds. Labels and sound cues matched their tiers; same-frame level changes did not replace the clear, and pending gameplay clears did not announce while paused. Clears replace the preceding landing spray and fade their main glow before entry.
+| Tool                   | Result                                                                 |
+| ---------------------- | ---------------------------------------------------------------------- |
+| TypeScript and Vite    | Passed; existing Three.js chunk advisory, 533.07 KB before compression |
+| ESLint                 | Zero findings                                                          |
+| Prettier               | Passed                                                                 |
+| Aislop                 | Score 95, zero errors, four warnings, zero automatic fixes             |
+| Aislop security engine | Zero findings                                                          |
 
-The UI harness confirmed full effects on fresh settings even when the OS requests reduced motion, plus all six named previews without score changes. Explicitly saved reduced motion remained respected. Automated previews disable spoken callouts through Settings to keep OS speech quiet. Composited landing, single-clear, six-clear and next-piece screenshots were inspected.
+Aislop retains three existing advisories: 481-line audio module, main module now 482 lines, and the two intentionally distinct kick oscillator configurations. Its fourth warning, `unreachable-code` at `leaderboard.ts:94`, is a false positive on a return following a conditional validation guard; valid-entry tests execute that return and the module has 100% line coverage. Informational arrow-glyph findings and punctuation in the scanner's own ignored logs remain. No rules, thresholds or exclusions were weakened.
 
-Reproduction commands are in [SMOKE.md](SMOKE.md). Generated screenshots and logs are in the ignored `artifacts/` directory.
+## Commands
 
-## Unit coverage
+```powershell
+npm run coverage
+npm run lint
+npm run build
+npm run format:check
+aislop scan --json
+npm run dev:lan
+node tests/browser-smoke.mjs
+node tests/media-smoke.mjs
+node tests/mobile-smoke.mjs
+node tests/particle-benchmark.mjs adaptive-resolution
+```
 
-The final integration run measured every production TypeScript file after the hidden panel and normalized defaults. Browser smoke tests are separate and do not contribute to these coverage figures.
-
-| Scope                          | Statements | Branches | Functions | Lines  |
-| ------------------------------ | ---------- | -------- | --------- | ------ |
-| All production source          | 51.29%     | 55.61%   | 50.15%    | 51.85% |
-| Rules, shapes and shared types | 100%       | 99.32%   | 100%      | 100%   |
-| Musical score                  | 100%       | 90.47%   | 100%      | 100%   |
-| Melody data and dance groove   | 100%       | 100%     | 100%      | 100%   |
-| Club kick and pump             | 100%       | 100%     | 100%      | 100%   |
-| Audio engine                   | 89.05%     | 81.42%   | 87.50%    | 93.69% |
-| Clear tiers                    | 100%       | 100%     | 100%      | 100%   |
-| Gameplay effects               | 96.66%     | 89.92%   | 95.23%    | 96.88% |
-| Announcer                      | 95.12%     | 88%      | 90%       | 97.05% |
-| Settings persistence           | 52.63%     | 82.14%   | 60%       | 52.63% |
-| Impact normalization           | 100%       | 100%     | 100%      | 100%   |
-
-The remaining core branch is the defensive active-piece guard during Resonance. UI, the Juice lab, feedback coordination and rendering use native Chromium integration checks and have no unit coverage. Persistence and older sound-effect paths have partial unit coverage plus native checks. This is not a claim of full application coverage. Reports are in `coverage/`.
-
-## Static review and limits
-
-The full Aislop pass scored 94 with zero errors and four warnings. Two repeated action-cue literals were replaced with named constants; their focused follow-up scored 100. The final changed-source follow-up scored 97, with a non-mechanical 447-line main-module advisory. The 481-line audio module also retains its size advisory. The kick's two oscillator configurations were flagged as duplicate blocks; these are intentionally distinct body and sub layers with different pitch, duration, envelope, gain and filtering, so the explicit calls were retained. Arrow glyphs in controls/documentation and punctuation emitted by the scanner in its own ignored log remain informational findings. No rules or thresholds were disabled. The security engine reported no issues.
-
-Vite retains its size advisory for the Three.js chunk (about 533 KB before compression, 133 KB gzip). The application chunk is about 77 KB before compression.
-
-Verification used Chromium on Windows. Firefox, Safari, physical touch input, subjective speaker/headphone quality and the Windows double-click launcher were not independently exercised. The launcher's underlying development-server command was exercised successfully. Music was verified structurally and through real audio output, not by a subjective listening evaluation.
+Browser harnesses use `POLYPHASE_BROWSER` when selecting an installed Chromium executable. Mobile verification set `POLYPHASE_URL` to the live LAN address. Benchmark comparisons used the isolated particle worktree with the corresponding baseline and final effects modules. Reproduction details are in [SMOKE.md](SMOKE.md); generated logs, screenshots and coverage reports are ignored artifacts.

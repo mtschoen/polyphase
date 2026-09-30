@@ -5,11 +5,12 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 ## Development
 
 - Node.js 22.12 or newer. `npm install`, then `npm run dev`.
+- `npm run dev:lan` or `PLAY-ON-PHONE.bat`: serve on the local network for phone play.
 - `npm run build`: TypeScript validation and production bundle.
 - `npm test`: deterministic rules tests. `npm run coverage`: full source coverage report.
 - `npm run lint`, `npm run format:check`: code checks.
 - `npm run preview`: serve the production build.
-- `node tests/browser-smoke.mjs` and `node tests/media-smoke.mjs`: real browser checks against a running dev server. See SMOKE.md for browser setup.
+- `node tests/browser-smoke.mjs`, `node tests/media-smoke.mjs` and `node tests/mobile-smoke.mjs`: real browser checks against a running dev server. See SMOKE.md for browser setup and TEST-REPORT.md for the latest evidence.
 
 ## Architecture
 
@@ -20,6 +21,7 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `src/universe.ts`: Three.js animated cosmic environment.
 - `src/renderer.ts`, `src/effects.ts`: board drawing and unclipped gameplay particles.
 - `src/main.ts`, `src/interface.ts`, `src/input.ts`, `src/storage.ts`: UI, controls, persistence and game loop.
+- `src/leaderboard.ts`, `src/leaderboard-panel.ts`: validated local rankings, stale-tab merging and the trophy dialog. Save completed runs before replacing game state.
 - `src/impact-settings.ts`, `src/juice-lab.ts`: normalized impact controls and the hidden Konami preview panel. Stored multipliers stay absolute; percentages are relative to the tuned defaults.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
 
