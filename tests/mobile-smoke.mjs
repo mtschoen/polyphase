@@ -12,6 +12,7 @@ const errors = [];
 await mkdir('artifacts', { recursive: true });
 try {
   for (const [width, height, mode] of [
+    [320, 568, 'pentris'],
     [320, 568, 'monotris'],
     [390, 844, 'pentris'],
     [844, 390, 'sextris'],
@@ -26,7 +27,8 @@ try {
     const page = await context.newPage();
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(base);
-    await page.locator(`[data-mode="${mode}"]`).tap();
+    // Starting the default mode must work before any mode button initializes layout.
+    if (mode !== 'pentris') await page.locator(`[data-mode="${mode}"]`).tap();
     await page.getByRole('button', { name: 'Enter the flow' }).tap();
     await page.waitForFunction(() => document.body.classList.contains('in-run'));
     const geometry = await page.evaluate(() => ({

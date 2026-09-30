@@ -12,6 +12,7 @@ body {
   --line: rgba(173, 213, 193, 0.14);
   --panel: rgba(10, 25, 21, 0.64);
   --board-height: min(64vh, 660px);
+  --board-ratio: 0.5454545;
 }
 * {
   box-sizing: border-box;

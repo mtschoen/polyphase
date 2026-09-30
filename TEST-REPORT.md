@@ -3,7 +3,7 @@
 | Field              | Result                                                                         |
 | ------------------ | ------------------------------------------------------------------------------ |
 | Date               | 2026-09-30                                                                     |
-| Git reference      | `e50f84e` plus accompanying mobile controls and Pages release changes          |
+| Git reference      | `8c2225e` plus accompanying GitHub link and initial mobile layout fix          |
 | Status             | PASS: production build, unit suite, lint, formatting and native browser checks |
 | Mode               | Best effort; unit line coverage 57.89%, previous 57.98%                        |
 | Unit tests         | 212 passed across 12 files; zero failures or skips                             |
@@ -33,12 +33,13 @@ Three additional DOM integration lines are covered by native browser checks, whi
 | Settings and Juice lab              | Impact controls, Konami unlock, repeated previews, keyboard behavior and persistence passed                                                    |
 | Native audio                        | Six meters, custom Fusion, mute, pumping, output boost and 18 action/theme cases passed                                                        |
 | Clear effects                       | Landing, trails, escalation, reduced motion and 12 legal Flow/Rush clear cases passed                                                          |
-| Mobile layouts                      | 320x568, 390x844 and 844x390 passed without overflow or obscured controls                                                                      |
+| Mobile layouts                      | 320x568, 390x844 and 844x390 passed, including direct default Pentris start without a mode selection                                           |
 | Mobile music                        | Three atmosphere buttons remain visible, meet 44x44 targets, update the track and keep gameplay running                                        |
 | Mobile pause                        | Visible Pause/Resume label, high-contrast button and working state transitions passed                                                          |
 | Screen shake                        | Music dock stays anchored; translated game surface does not widen the layout viewport                                                          |
 | Mobile input                        | Movement, rotation, hold, soft/hard drop, simultaneous contacts, repeat, release and cancellation passed                                       |
 | Production bundle                   | Desktop and phone checks at `/polyphase/` passed: assets/favicon, WebGL, gameplay, atmosphere, pause, saved rankings and desktop Konami unlock |
+| GitHub source link                  | Opens the repository in a new tab; visible on desktop and mobile with a 44-pixel tap target                                                    |
 | Visual inspection                   | Small portrait, landscape and production desktop/phone screenshots inspected                                                                   |
 
 Production verification used installed Chrome with the NVIDIA GPU. The legacy Chromium headless shell's software SwiftShader renderer lost its WebGL context on the production bundle; hardware Chrome initialized and passed. Physical Android/iOS devices, Safari and Firefox were not independently exercised. Audio checks measure actual browser output, not subjective listening quality.

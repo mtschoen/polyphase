@@ -103,6 +103,7 @@
     display: none;
   }
   .site-footer {
+    flex-wrap: wrap;
     margin: 0 5%;
     padding: 17px 0;
   }
