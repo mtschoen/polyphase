@@ -26,6 +26,10 @@ try {
   );
   assert.equal(await page.locator('#effects-mode').textContent(), 'FULL FX');
   assert.equal(await page.locator('#universe').getAttribute('data-universe-status'), 'ready');
+  // Keep OS speech quiet during automated previews; native voice behavior has its own tests.
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByLabel('Spoken clear callouts', { exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Close settings' }).click();
   const clearNames = [
     'POP!',
     'DOUBLE TROUBLE!',

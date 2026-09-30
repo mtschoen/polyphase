@@ -61,6 +61,8 @@ export async function checkParticles(page) {
       .forEach((event) => renderer.handle(event, game.width));
     renderer.render(game, 0.05, 3);
     const lockPixels = countPixels();
+    for (let step = 0; step < 7; step++) renderer.render(game, 1 / 60, 3 + step / 60);
+    const lingeringLockPixels = countPixels();
     renderer.reset();
     game.active = { ...straight, x: 7, y: 0 };
     game.board[21] = Array.from({ length: 12 }, (_, column) => (column < 7 ? 1 : null));
@@ -74,6 +76,7 @@ export async function checkParticles(page) {
     const lineCleared = game.lines === 1;
     const shakeVisible = frame.style.transform.includes('translate3d');
     renderer.reset();
+    game.update(1);
     game.board[21][0] = 1;
     game.charge = 100;
     const resonated = game.activateResonance();
@@ -99,6 +102,7 @@ export async function checkParticles(page) {
       dropPixels,
       escapedPixels,
       lockPixels,
+      lingeringLockPixels,
       clearPixels,
       resonancePixels,
       expiredPixels,
@@ -113,8 +117,14 @@ export async function checkParticles(page) {
     };
   });
   assert.equal(results.separateEffectsLayer, true, 'Impacts need an unclipped effects layer');
-  // Landing dust is deliberately subtle; it must draw, while clears remain substantial.
-  assert.ok(results.lockPixels > 0, 'Landing dust must remain visible');
+  assert.ok(
+    results.lockPixels > 300,
+    `Landing sparks need a visible footprint (${results.lockPixels})`,
+  );
+  assert.ok(
+    results.lingeringLockPixels > 120,
+    `Landing sparks must remain perceptible after the first flash (${results.lingeringLockPixels})`,
+  );
   for (const key of ['dropPixels', 'clearPixels', 'resonancePixels'])
     assert.ok(results[key] > 100, `${key} must contain a visible burst (observed ${results[key]})`);
   assert.equal(results.expiredPixels, 0, 'Expired particles must leave no stale pixels');

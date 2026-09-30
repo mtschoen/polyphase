@@ -3,6 +3,8 @@ import type { Mode } from './game/types';
 import { scheduleGroove } from './groove';
 import { melodyForBar } from './score-melodies';
 export type SoundtrackMode = Mode | 'monotris' | 'ditris' | 'tritris' | 'tetris';
+const QUARTER_NOTES_PER_MINUTE = 132;
+const TEMPO_LABEL = `${QUARTER_NOTES_PER_MINUTE} quarter notes/min`;
 const DEFAULT_SIZES: Record<SoundtrackMode, readonly number[]> = {
   monotris: [1],
   ditris: [2],
@@ -31,12 +33,12 @@ export function soundtrackForSizes(sizes: readonly number[]): {
   return {
     title: selected.length === 1 ? `The ${selected[0]}-Cell Dance` : 'Polyphase Folk Circuit',
     meter: selected.map((size) => `${size}/4`).join(' + '),
-    tempo: '132 quarter notes/min',
+    tempo: TEMPO_LABEL,
   };
 }
 
 /** Every mode shares this quarter-note tempo; each bar contains its piece count in beats. */
-export const BEAT_DURATION = 60 / 132;
+export const BEAT_DURATION = 60 / QUARTER_NOTES_PER_MINUTE;
 export const PAD_PANNING = [-0.65, 0.35, -0.25, 0.65] as const;
 export const MELODY_WAVE: OscillatorType = 'triangle';
 export const frequencyForNote = (note: number): number => 440 * 2 ** ((note - 69) / 12);
@@ -48,12 +50,12 @@ export const SOUNDTRACKS: Record<SoundtrackMode, { title: string; meter: string;
     ditris: soundtrackForSizes([2]),
     tritris: soundtrackForSizes([3]),
     tetris: soundtrackForSizes([4]),
-    pentris: { title: 'The Fifth Step', meter: '5/4 · 3+2', tempo: '132 quarter notes/min' },
-    sextris: { title: 'Six in the Current', meter: '6/4 · 3+3', tempo: '132 quarter notes/min' },
+    pentris: { title: 'The Fifth Step', meter: '5/4 · 3+2', tempo: TEMPO_LABEL },
+    sextris: { title: 'Six in the Current', meter: '6/4 · 3+3', tempo: TEMPO_LABEL },
     fusion: {
       title: 'Five Meets Six',
       meter: 'Alternating 5/4 + 6/4',
-      tempo: '132 quarter notes/min',
+      tempo: TEMPO_LABEL,
     },
   };
 const THEME_TRANSPOSITIONS = [-7, -5, -12] as const;

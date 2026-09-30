@@ -15,7 +15,7 @@ export async function checkModeOptions(page) {
   await page.getByLabel('5-square pieces', { exact: true }).check();
   await page.getByLabel('6-square pieces', { exact: true }).check();
   assert.match(await page.locator('#fusion-summary').textContent(), /3 \+ 5 \+ 6/);
-  assert.match(await page.locator('#track-name').textContent(), /3\/4 \+ 5\/4 \+ 6\/8/);
+  assert.match(await page.locator('#track-name').textContent(), /3\/4 \+ 5\/4 \+ 6\/4/);
   assert.match(await page.locator('#board-size').textContent(), /14 × 22/);
   await page.screenshot({ path: 'artifacts/polyphase-custom-fusion.png', fullPage: true });
   await page.getByRole('button', { name: 'Enter the flow' }).click();

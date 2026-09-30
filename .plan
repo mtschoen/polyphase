@@ -5,10 +5,12 @@ Architecture: deterministic TypeScript rules, Canvas board, Three.js universe, W
 Technology: Vite, TypeScript, Three.js, Vitest, ESLint, Prettier.
 
 - [x] Rules: all one-through-six-cell playable shapes including mirrors; balanced custom Fusion; bags, boards, kicks, hold, ghost, drop, lock delay, lines, scoring, charge and game over. Behavior tests first.
-- [x] Audio: original Korobeiniki arrangement in piece-count meters; bass, countermelody, drums, delay and responsive effects; gesture startup, mute, pause and volume.
+- [x] Audio: original Korobeiniki arrangement in piece-count meters; bass, harmony, drums, delay and responsive effects; gesture startup, mute, pause and volume.
 - [x] Universe: Three.js cosmic vista with stars, aurora, luminous orbit, themes and impact reaction; reduced motion and fallback.
 - [x] Interface: responsive UI, Canvas pieces and unclipped particles, shake, previews, seven modes and Fusion size mixer, settings, pause/restart, separate mix records, touch.
 - [x] Integration: review lanes; build, lint, one full suite, aislop, browser playthroughs and screenshots.
 - [x] Documentation: README, build instructions, TEST-REPORT and launcher; leave a runnable local server.
 - [x] Clear feedback: six shared tiers, short fine particles, landing dust, escalating shake/stingers, optional voice, guide masking and score-safe previews. Full effects by default.
 - [x] Dance groove: stronger kicks, offbeat hats, syncopated bass and claps without changing the approved melody, meters or tempos. Independent review and native audio smoke.
+- [x] Impact timing: visibly bright fine landing sparks, stronger line explosions and deterministic 0.36 to 0.66 second clear entry delays in Flow and Rush, verified together in native rendering.
+- [x] Club soundtrack: concise looping hooks in 1/4 through 6/4, independent Fusion phrases, layered kick and sub-bass, melodic/echo side-chain pumping, independent review and native gain-envelope verification.

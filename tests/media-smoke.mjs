@@ -2,6 +2,7 @@ import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { checkParticles } from './particle-checks.mjs';
 import { checkClearEscalation } from './clear-checks.mjs';
+import { checkClubPump } from './club-checks.mjs';
 
 const browser = await chromium.launch({
   headless: true,
@@ -92,6 +93,7 @@ try {
   });
   const effects = await checkParticles(page);
   const clearEscalation = await checkClearEscalation(page);
+  const clubPump = await checkClubPump(page);
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify(
@@ -102,6 +104,7 @@ try {
         effectsProducedAudio: true,
         effects,
         clearEscalation,
+        clubPump,
         browserErrors: errors,
       },
       null,
