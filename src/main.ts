@@ -81,6 +81,7 @@ function applySettings(): void {
     settings.reducedMotion ? 'Enable full effects' : 'Use reduced effects',
   );
   element<HTMLInputElement>('#ghost').checked = settings.ghost;
+  element<HTMLInputElement>('#zone-hints').checked = settings.zoneHints;
   setText('#volume-value', `${Math.round(settings.volume * 100)}%`);
   updateTrack();
   setText('#theme-name', THEMES[settings.theme].name.toUpperCase());
@@ -234,6 +235,7 @@ function syncStatus(): void {
   audio.setPlaying(game.status === 'playing');
   if (game.status !== 'playing') announcer.cancel();
   document.body.classList.toggle('playing', game.status === 'playing' && !settings.muted);
+  syncZones();
   setText(
     '#game-state',
     { ready: '● STANDBY', playing: '● IN THE FLOW', paused: '● PAUSED', over: '● JOURNEY ENDED' }[
@@ -275,6 +277,38 @@ function saveCompletedRun(): void {
       else toast('A new personal best. Beautifully played.');
     }
     savedScore = game.score;
+  }
+}
+const coarsePointer = window.matchMedia('(max-width: 900px), (pointer: coarse)');
+let hintPinned = false;
+let hintSeen = false;
+function syncZones(): void {
+  const active = game.status === 'playing' && coarsePointer.matches;
+  input.setZonesActive(active);
+  document.body.classList.toggle('touch-zones-on', active);
+  syncHint();
+}
+function syncHint(): void {
+  const show = hintPinned || (settings.zoneHints && !hintSeen);
+  element('#touch-zones').classList.toggle('visible', game.status === 'playing' && show);
+  const toggle = element('#zone-hint-toggle');
+  toggle.classList.toggle('pinned', hintPinned);
+  toggle.setAttribute('aria-pressed', String(hintPinned));
+  toggle.setAttribute('aria-label', hintPinned ? 'Hide tap zones' : 'Show tap zones');
+}
+function syncHold(): void {
+  const used = game.status === 'playing' && game.held !== null && !game.canHold;
+  document.body.classList.toggle('hold-used', used);
+  element<HTMLButtonElement>('#touch-counter').disabled = used;
+  setText(
+    '#hold-caption',
+    used ? 'Hold is used up' : game.held ? 'Press C to swap' : 'A little breathing room',
+  );
+}
+function dismissHint(): void {
+  if (!hintSeen) {
+    hintSeen = true;
+    syncHint();
   }
 }
 function updatePreviews(): void {
@@ -348,6 +382,25 @@ document.querySelectorAll<HTMLElement>('[data-difficulty]').forEach((button) =>
 );
 element('#mute').addEventListener('click', mute);
 element('#leaderboard').addEventListener('click', openLeaderboard);
+element('#zone-hint-toggle').addEventListener('click', () => {
+  hintPinned = !hintPinned;
+  if (hintPinned) hintSeen = true;
+  syncHint();
+});
+document.addEventListener(
+  'pointerdown',
+  () => {
+    if (game.status === 'playing') dismissHint();
+  },
+  { capture: true },
+);
+element('#zone-hints').addEventListener('change', () => {
+  settings.zoneHints = element<HTMLInputElement>('#zone-hints').checked;
+  hintSeen = false;
+  persistSettings();
+  syncHint();
+});
+coarsePointer.addEventListener('change', syncZones);
 element('#fullscreen').addEventListener('click', () => void fullscreen());
 element('#pause').addEventListener('click', pause);
 element('#resonance').addEventListener('click', resonate);
@@ -465,6 +518,7 @@ function frame(now: number): void {
   renderer.render(game, delta, now / 1000);
   syncStatus();
   updatePreviews();
+  syncHold();
   setText('#score', String(game.score).padStart(6, '0'));
   setText('#best', best.toLocaleString());
   setText('#level', String(game.level).padStart(2, '0'));

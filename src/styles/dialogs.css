@@ -36,6 +36,16 @@ dialog p {
   line-height: 1.8;
   color: #a1b8a9;
 }
+.touch-help {
+  display: none;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  .touch-help {
+    display: block;
+    font-size: 10px;
+    color: #8fd3ae;
+  }
+}
 .setting-row {
   display: flex;
   justify-content: space-between;

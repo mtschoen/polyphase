@@ -7,6 +7,109 @@
     width: 44px;
     height: 44px;
   }
+  /* In a run, the cramped button cluster gives way to full-screen tap zones. */
+  .in-run .touch-controls {
+    display: none;
+  }
+  .touch-counter {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left, 0px));
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+    width: 54px;
+    height: 54px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid #6f9c7b55;
+    background: #183526d9;
+    color: #d6f1df;
+    font-size: 24px;
+    touch-action: none;
+    box-shadow: 0 4px 18px #0007;
+  }
+  .touch-counter:disabled {
+    opacity: 0.3;
+  }
+  .touch-zones-on .touch-counter {
+    display: inline-flex;
+  }
+  .zone-hint-toggle {
+    position: fixed;
+    right: max(10px, env(safe-area-inset-right, 0px));
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    z-index: 6;
+    display: none;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 17px;
+    border: 1px solid #6f9c7b55;
+    background: #11271fd9;
+    color: #9fc7ad;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+  .zone-hint-toggle.pinned {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .touch-zones-on .zone-hint-toggle {
+    display: inline-flex;
+  }
+  .touch-zones {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    background:
+      linear-gradient(90deg, #78e6c214 0 1px, transparent 1px) 33.333% 0 / 33.334% 100% no-repeat,
+      linear-gradient(90deg, #78e6c214 0 1px, transparent 1px) 66.666% 0 / 33.334% 100% no-repeat;
+  }
+  .touch-zones.visible {
+    opacity: 1;
+  }
+  .touch-zones .zone-label {
+    position: absolute;
+    top: 34%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #c8f2dc;
+    font-size: 26px;
+    text-shadow: 0 0 14px #000;
+  }
+  .touch-zones .zone-label em {
+    font-style: normal;
+    font-size: 8px;
+    letter-spacing: 1.6px;
+    color: #8fd3ae;
+  }
+  .touch-zones .zone-left {
+    left: 16.666%;
+  }
+  .touch-zones .zone-rotate {
+    left: 50%;
+  }
+  .touch-zones .zone-right {
+    left: 83.333%;
+  }
+  .touch-zones .zone-drop {
+    top: auto;
+    bottom: 12%;
+    left: 50%;
+    font-size: 20px;
+  }
+  .touch-zones .zone-hold {
+    top: 12%;
+    left: 50%;
+    font-size: 18px;
+  }
   .touch-controls {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -71,7 +174,7 @@
   .in-run .board-frame {
     width: min(
       100%,
-      calc((100dvh - 315px - env(safe-area-inset-bottom, 0px)) * var(--board-ratio) + 12px)
+      calc((100dvh - 270px - env(safe-area-inset-bottom, 0px)) * var(--board-ratio) + 12px)
     );
     margin: 0 auto;
     padding: 5px;
@@ -233,7 +336,7 @@
   .in-run .board-frame {
     grid-column: 1;
     grid-row: 2;
-    width: calc((100dvh - 192px - env(safe-area-inset-bottom, 0px)) * var(--board-ratio) + 12px);
+    width: calc((100dvh - 158px - env(safe-area-inset-bottom, 0px)) * var(--board-ratio) + 12px);
   }
   .in-run .touch-controls {
     grid-column: 2;

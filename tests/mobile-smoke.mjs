@@ -39,7 +39,7 @@ try {
       dock: document.querySelector('.site-footer').getBoundingClientRect().toJSON(),
       controls: [
         ...document.querySelectorAll(
-          '[data-action], #resonance, #pause, .header-actions button, [data-theme]',
+          '.touch-zones-on [data-action], #resonance, #pause, .header-actions button, [data-theme]',
         ),
       ]
         .filter((element) => element.getBoundingClientRect().width > 0)
@@ -53,7 +53,10 @@ try {
     assert.equal(geometry.scroll, 0);
     assert.ok(geometry.board.top >= 0 && geometry.board.bottom <= height);
     assert.ok(geometry.dock.height >= 56 && geometry.dock.bottom <= height);
-    assert.ok(geometry.board.bottom <= geometry.dock.top);
+    assert.ok(
+      geometry.board.bottom <= geometry.dock.top,
+      `${mode} ${width}x${height} board bottom ${geometry.board.bottom} exceeds dock top ${geometry.dock.top}`,
+    );
     for (const control of geometry.controls) {
       assert.ok(
         control.width >= 44 && control.height >= 44,
@@ -94,10 +97,57 @@ try {
       geometry.dock.top,
       'The music dock stays anchored during screen shake',
     );
-    for (const action of ['left', 'rotate', 'right', 'hold', 'down', 'drop'])
-      await page.locator(`[data-action="${action}"]`).tap();
+    // Drive the full-screen tap zones over the board region: left/middle/right thirds move and
+    // rotate, a two-finger tap holds, and a sideways flick hard drops.
+    const playBox = await page.locator('#board-frame').boundingBox();
+    const zonePoint = (fx, fy) => [playBox.x + playBox.width * fx, playBox.y + playBox.height * fy];
+    const fire = (type, fx, fy, id) =>
+      page.evaluate(
+        ([t, x, y, i]) => {
+          document.elementFromPoint(x, y).dispatchEvent(
+            new PointerEvent(t, {
+              pointerId: i,
+              pointerType: 'touch',
+              clientX: x,
+              clientY: y,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        },
+        [type, ...zonePoint(fx, fy), id],
+      );
+    await fire('pointerdown', 0.15, 0.4, 1);
+    await fire('pointerup', 0.15, 0.4, 1);
+    await fire('pointerdown', 0.5, 0.4, 2);
+    await fire('pointerup', 0.5, 0.4, 2);
+    await fire('pointerdown', 0.85, 0.4, 3);
+    await fire('pointerup', 0.85, 0.4, 3);
+    await fire('pointerdown', 0.15, 0.5, 4);
+    await fire('pointerdown', 0.85, 0.5, 5);
+    await fire('pointerup', 0.15, 0.5, 4);
+    await fire('pointerup', 0.85, 0.5, 5);
+    await page.evaluate(
+      ([x, y]) => {
+        const target = document.elementFromPoint(x, y);
+        const flick = (type, at) =>
+          target.dispatchEvent(
+            new PointerEvent(type, {
+              pointerId: 7,
+              pointerType: 'touch',
+              clientX: at,
+              clientY: y,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        flick('pointerdown', x);
+        flick('pointerup', x + 60);
+      },
+      zonePoint(0.5, 0.7),
+    );
     await page.waitForFunction(() => Number(document.querySelector('#score').textContent) > 0);
-    assert.match(await page.locator('#hold-caption').textContent(), /swap/);
+    assert.match(await page.locator('#hold-caption').textContent(), /swap|used/i);
     await page.screenshot({ path: `artifacts/mobile-play-${width}.png`, fullPage: true });
     await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
     await page.getByRole('button', { name: 'Keep flowing' }).waitFor();

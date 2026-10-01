@@ -291,6 +291,13 @@ export class GameEngine {
     return this.clearDelay;
   }
 
+  /** Whether holding the active piece is currently available. */
+  get canHold(): boolean {
+    return (
+      this.status === 'playing' && this.clearDelay <= 0 && this.active !== null && !this.holdUsed
+    );
+  }
+
   private emptyRow(): (number | null)[] {
     return Array<number | null>(this.width).fill(null);
   }

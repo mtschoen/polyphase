@@ -75,6 +75,12 @@
   width: 100%;
   height: 56px;
 }
+.hold-used .hold-panel {
+  opacity: 0.45;
+}
+.hold-used .hold-panel > canvas {
+  filter: grayscale(0.9) brightness(0.7);
+}
 .hold-panel > small {
   display: block;
   text-align: center;
@@ -144,10 +150,33 @@
   color: #789c83;
 }
 .resonance.ready {
-  filter: drop-shadow(0 0 12px #78e6c222);
+  filter: none;
+  background: linear-gradient(115deg, #214238d0, #143026b0);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow:
+    0 0 18px #78e6c240,
+    inset 0 0 18px #78e6c214;
+  animation: resonance-pulse 0.9s ease-in-out infinite alternate;
 }
 .resonance.ready .charge-caption {
   color: var(--accent);
+}
+@keyframes resonance-pulse {
+  from {
+    box-shadow:
+      0 0 8px #78e6c222,
+      inset 0 0 10px #78e6c20c;
+  }
+  to {
+    box-shadow:
+      0 0 26px #78e6c26b,
+      inset 0 0 22px #78e6c226;
+  }
+}
+.reduced-motion .resonance.ready {
+  animation: none;
 }
 .site-footer {
   display: flex;

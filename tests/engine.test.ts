@@ -273,6 +273,15 @@ describe('piece actions', () => {
     },
   );
 
+  it('reports hold availability for ghosting the control', () => {
+    const game = fresh('pentris');
+    expect(game.canHold).toBe(true);
+    game.hold();
+    expect(game.canHold).toBe(false);
+    game.hardDrop();
+    expect(game.canHold).toBe(true);
+  });
+
   it('ends the game when a queued or held piece cannot spawn', () => {
     for (const action of ['drop', 'hold'] as const) {
       const game = fresh();

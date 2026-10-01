@@ -13,6 +13,7 @@ export interface Settings extends ImpactSettings {
   theme: number;
   fusionSizes: PieceSize[];
   announcer: boolean;
+  zoneHints: boolean;
 }
 const defaults: Settings = {
   ...DEFAULT_IMPACT_SETTINGS,
@@ -23,6 +24,7 @@ const defaults: Settings = {
   theme: 0,
   fusionSizes: [5, 6],
   announcer: true,
+  zoneHints: true,
 };
 export function loadSettings(): Settings {
   try {
@@ -51,6 +53,7 @@ export function loadSettings(): Settings {
           : 0,
       fusionSizes: fusionSizes.length ? fusionSizes : [...defaults.fusionSizes],
       announcer: typeof value.announcer === 'boolean' ? value.announcer : defaults.announcer,
+      zoneHints: typeof value.zoneHints === 'boolean' ? value.zoneHints : defaults.zoneHints,
     };
   } catch {
     return { ...defaults, fusionSizes: [...defaults.fusionSizes] };
