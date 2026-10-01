@@ -2,7 +2,7 @@ name: Publish Polyphase
 
 on:
   push:
-    branches: [main]
+    branches: [main, copilot/issue-1-fixes]
   workflow_dispatch:
 
 permissions:
@@ -30,13 +30,18 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run coverage
-      - run: npm run build:pages
+      - name: Build production site
+        if: github.ref == 'refs/heads/main'
+        run: npm run build:pages
+      - name: Build branch preview
+        if: github.ref != 'refs/heads/main'
+        run: npm run build -- --base="/${GITHUB_REPOSITORY#*/}/preview/" && node scripts/stage-preview.mjs dist dist-preview
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Upload site
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: dist
+          path: ${{ github.ref == 'refs/heads/main' && 'dist' || 'dist-preview' }}
   deploy:
     needs: build
     runs-on: ubuntu-latest
