@@ -3,7 +3,7 @@
 | Field              | Value                                                                                |
 | ------------------ | ------------------------------------------------------------------------------------ |
 | Date               | 2026-10-01                                                                           |
-| Git reference      | `fix/mobile-input`, based on `c614d09`, with this report                             |
+| Git reference      | `fix/mobile-input`, responsive control sizing after `d8be42f`, with this report      |
 | Status             | PASS: unit suite, lint, formatting, Pages build and native browser checks            |
 | Mode               | Best effort; full-source line coverage 58.55%, baseline 57.89%                       |
 | Unit tests         | 224 passed across 14 files; zero failures or skips                                   |
@@ -25,6 +25,8 @@
 Unit tests cover control availability, Hold reset with an unchanged held preview, Resonance presentation, exclusive D-pad ownership, native activation and one-step soft drop without advancing simulation time. Browser integration checks do not contribute to unit coverage. Main, renderer, universe, Juice lab and feedback retain zero unit coverage. All production TypeScript remains included; this is not full application coverage.
 
 ## Runtime checks
+
+The control-sizing follow-up reran all 11 mobile cases, the 224-test coverage suite, lint, formatting, the Pages build and Aislop. Broader gameplay and audio evidence below comes from `d8be42f`; this follow-up changes CSS only. Buttons now fill their allocated deck areas without moving or shrinking the board. Measured targets at 390x844: D-pad about 65x48, rotations 66x75 and Hold 143x75 CSS pixels. At 768x896: D-pad 136x61, rotations 136x95 and Hold 285x95. Landscape controls also use the available side height.
 
 | Check                         | Result                                                                                                                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

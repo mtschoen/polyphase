@@ -3,9 +3,9 @@
     position: fixed;
     inset: auto 0 0;
     z-index: 7;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: stretch;
     gap: 16px;
     height: var(--deck-space);
     margin: 0;
@@ -20,14 +20,14 @@
   }
   .direction-pad {
     display: grid;
-    grid-template-columns: repeat(3, var(--touch-size));
-    grid-template-rows: repeat(3, var(--touch-size));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
   .action-pad {
     display: grid;
-    grid-template-columns: repeat(2, var(--touch-size));
-    grid-template-rows: calc(var(--touch-size) + 8px) var(--touch-size);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 14px 12px;
   }
   .touch-controls button {
@@ -92,7 +92,8 @@
 }
 @media (pointer: coarse) and (min-width: 700px) {
   .in-run .touch-controls {
-    padding-inline: max(20px, calc((100vw - 800px) / 2));
+    padding-inline: max(20px, env(safe-area-inset-left, 0px))
+      max(20px, env(safe-area-inset-right, 0px));
   }
 }
 @media (pointer: coarse) and (max-width: 319px) {
@@ -120,7 +121,11 @@
 }
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
   .in-run .touch-controls {
-    height: calc(3 * var(--touch-size) + 36px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    justify-content: space-between;
+    height: calc(
+      100dvh - var(--mobile-header) - var(--mobile-music) - env(safe-area-inset-top, 0px)
+    );
     padding-inline: max(8px, env(safe-area-inset-left, 0px))
       max(8px, env(safe-area-inset-right, 0px));
     background: none;
@@ -129,6 +134,7 @@
   }
   .direction-pad,
   .action-pad {
+    width: calc((100vw - min(520px, 100vw - 344px)) / 2 - 16px);
     pointer-events: auto;
   }
 }
