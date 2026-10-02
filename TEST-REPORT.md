@@ -1,5 +1,33 @@
 # Polyphase release verification
 
+## Hosted preview infrastructure (2026-10-01)
+
+PR #5 adds combined Pages publication with automatic PR previews and manual branch
+previews. PR #4 is unchanged and unmerged. Local verification of the infrastructure:
+
+- All 212 tests pass across 12 files; coverage is unchanged at the values below.
+- Lint, formatting, TypeScript and a build using `/polyphase/pr-preview/pr-4/` pass.
+- Native Chrome release smoke at that nested path passes at desktop 1440x1000 and
+  mobile 390x844, including assets, gameplay, atmosphere and local rankings; zero
+  browser errors. This local check uses the main game, not PR #4's game revision.
+- The workflow target resolver was exercised with production bootstrap, event and
+  manual PR selection, closed PR cleanup, colliding branch slugs, manual removal,
+  fork rejection and API failure cases. All passed.
+- Independent workflow review found a pending-run cancellation risk; `queue: max`
+  fixes it. GitHub documents that option, but actionlint 1.7.12 reports it as an
+  unknown concurrency key. No other actionlint findings. GitHub execution must
+  validate the option after merge.
+- Aislop: score 95, no security or lint findings; four warnings in unchanged game
+  source (file size, duplication and unreachable-code heuristic) remain.
+
+Hosted verification is pending the required review/merge of infrastructure PR #5.
+After merge, dispatch `Publish Polyphase` from `main` with `preview=4`; verify both
+URLs and their `deployed-version.json` revisions. Also verify preservation after a
+production publish and manual branch preview creation/removal. The Pages environment
+continues to permit only `main`; no Pages settings were changed during preparation.
+
+## Original release evidence
+
 | Field              | Result                                                                         |
 | ------------------ | ------------------------------------------------------------------------------ |
 | Date               | 2026-09-30                                                                     |
