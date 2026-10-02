@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { checkNativeControls } from './mobile-input-checks.mjs';
 
 const base = process.env.POLYPHASE_URL || 'http://127.0.0.1:5173';
 const browser = await chromium.launch({
@@ -10,12 +11,76 @@ const browser = await chromium.launch({
 const results = [];
 const errors = [];
 await mkdir('artifacts', { recursive: true });
+
+async function geometry(page, width, height, state) {
+  const layout = await page.evaluate(() => {
+    const bounds = (selector) => document.querySelector(selector).getBoundingClientRect().toJSON();
+    return {
+      viewport: [innerWidth, innerHeight],
+      document: [document.documentElement.scrollWidth, document.documentElement.scrollHeight],
+      scroll: [scrollX, scrollY],
+      board: bounds('#board'),
+      music: bounds('.site-footer'),
+      deck: bounds('.touch-controls'),
+      controls: [
+        ...document.querySelectorAll(
+          '[data-action], #resonance, #pause, #mobile-effects-mode, .header-actions button, [data-theme], .mobile-setup select, [data-fusion-size], [data-overlay-action]',
+        ),
+      ]
+        .filter((element) => element.checkVisibility())
+        .map((element) => ({
+          name:
+            element.dataset.action ||
+            element.id ||
+            element.getAttribute('aria-label') ||
+            element.textContent,
+          ...element.getBoundingClientRect().toJSON(),
+          reachable: (() => {
+            const bounds = element.getBoundingClientRect();
+            return element.contains(
+              document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2),
+            );
+          })(),
+        })),
+    };
+  });
+  assert.deepEqual(layout.viewport, [width, height], `${state}: viewport must not zoom out`);
+  assert.ok(
+    layout.document[0] <= width && layout.document[1] <= height,
+    `${state}: document overflow ${layout.document}`,
+  );
+  assert.deepEqual(layout.scroll, [0, 0]);
+  assert.ok(layout.board.width > 44 && layout.board.height > 100);
+  assert.ok(layout.board.top >= layout.music.bottom && layout.board.bottom <= height);
+  if (layout.deck.height && height > 600) assert.ok(layout.board.bottom <= layout.deck.top);
+  for (const control of layout.controls) {
+    assert.ok(control.reachable, `${width}x${height} ${state}: ${control.name} is obscured`);
+    assert.ok(
+      control.width >= 44 && control.height >= 44,
+      `${width}x${height} ${state}: ${control.name} target too small (${control.width}x${control.height})`,
+    );
+    assert.ok(
+      control.left >= 0 && control.right <= width && control.top >= 0 && control.bottom <= height,
+      `${width}x${height} ${state}: ${control.name} off screen`,
+    );
+  }
+  return layout;
+}
+
 try {
   for (const [width, height, mode] of [
+    [280, 653, 'pentris'],
     [320, 568, 'pentris'],
+    [320, 480, 'pentris'],
     [320, 568, 'monotris'],
     [390, 844, 'pentris'],
+    [768, 896, 'pentris'],
+    [896, 768, 'fusion'],
     [844, 390, 'sextris'],
+    [844, 390, 'fusion'],
+    [568, 320, 'pentris'],
+    [1024, 768, 'fusion'],
+    [1024, 701, 'pentris'],
   ]) {
     const context = await browser.newContext({
       viewport: { width, height },
@@ -27,46 +92,85 @@ try {
     const page = await context.newPage();
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(base);
-    // Starting the default mode must work before any mode button initializes layout.
-    if (mode !== 'pentris') await page.locator(`[data-mode="${mode}"]`).tap();
+    await page.getByRole('button', { name: 'Enter the flow' }).waitFor();
+    assert.equal(
+      await page.locator('#mobile-effects-mode').isVisible(),
+      true,
+      'mobile effects shortcut',
+    );
+    assert.equal(await page.locator('#fullscreen').isVisible(), true, 'mobile fullscreen access');
+    assert.equal(await page.locator('.touch-controls').isVisible(), false);
+    if (mode !== 'pentris') await page.locator('#mobile-mode').selectOption(mode);
+    await geometry(page, width, height, 'setup');
+    await page.screenshot({ path: `artifacts/mobile-setup-${width}-${height}-${mode}.png` });
+    await page.getByRole('button', { name: 'Settings', exact: true }).tap();
+    await page.getByLabel('Spoken clear callouts', { exact: true }).uncheck();
+    await page.getByLabel('Reduced motion', { exact: true }).check();
+    await page.getByRole('button', { name: 'Close settings' }).tap();
     await page.getByRole('button', { name: 'Enter the flow' }).tap();
     await page.waitForFunction(() => document.body.classList.contains('in-run'));
-    const geometry = await page.evaluate(() => ({
-      width: innerWidth,
-      documentWidth: document.documentElement.scrollWidth,
-      scroll: scrollY,
-      board: document.querySelector('#board').getBoundingClientRect().toJSON(),
-      dock: document.querySelector('.site-footer').getBoundingClientRect().toJSON(),
-      controls: [
-        ...document.querySelectorAll(
-          '[data-action], #resonance, #pause, .header-actions button, [data-theme]',
+    const layout = await geometry(page, width, height, 'playing');
+    const information = await page.evaluate(() => {
+      const direction = document.querySelector('.direction-pad').getBoundingClientRect();
+      const actions = document.querySelector('.action-pad').getBoundingClientRect();
+      return {
+        gap: actions.left - direction.right,
+        best: document.querySelector('.best').checkVisibility(),
+        labelSize: parseFloat(
+          getComputedStyle(document.querySelector('.score-block .eyebrow')).fontSize,
         ),
-      ]
-        .filter((element) => element.getBoundingClientRect().width > 0)
-        .map((element) => ({
-          action: element.dataset.action || element.id || `theme-${element.dataset.theme}`,
-          ...element.getBoundingClientRect().toJSON(),
-        })),
-    }));
-    assert.equal(geometry.width, width, 'The phone must not zoom out to fit overflowing content');
-    assert.ok(geometry.documentWidth <= width);
-    assert.equal(geometry.scroll, 0);
-    assert.ok(geometry.board.top >= 0 && geometry.board.bottom <= height);
-    assert.ok(geometry.dock.height >= 56 && geometry.dock.bottom <= height);
-    assert.ok(geometry.board.bottom <= geometry.dock.top);
-    for (const control of geometry.controls) {
-      assert.ok(
-        control.width >= 44 && control.height >= 44,
-        `${mode} ${control.action} target is too small`,
-      );
-      assert.ok(
-        control.left >= 0 && control.right <= width && control.top >= 0 && control.bottom <= height,
-        `${mode} ${control.action} must fit the visible phone screen`,
-      );
-      if (!control.action.startsWith('theme-'))
-        assert.ok(control.bottom <= geometry.dock.top, `${control.action} overlaps the music dock`);
+        panelSize: parseFloat(
+          getComputedStyle(document.querySelector('.hold-panel .panel-heading')).fontSize,
+        ),
+      };
+    });
+    assert.ok(
+      information.gap >= (width >= 700 ? 48 : width >= 320 ? 24 : 20),
+      'inactive cross-pad margin',
+    );
+    assert.ok(information.best, 'personal best is visible');
+    assert.ok(
+      information.labelSize >= 10 && information.panelSize >= 11,
+      'readable sidebar labels',
+    );
+    if (height > 600) {
+      const sidebarBottom = await page
+        .locator('#resonance')
+        .evaluate((element) => element.getBoundingClientRect().bottom);
+      assert.ok(sidebarBottom <= layout.deck.top, 'sidebar stays above the controls');
     }
-    assert.equal(await page.locator('#pause-label').innerText(), 'Pause');
+    await page.locator('#mobile-effects-mode').tap();
+    assert.equal(await page.locator('#mobile-effects-mode').textContent(), 'FULL FX');
+    assert.equal(await page.locator('#effects-mode').textContent(), 'FULL FX');
+    assert.equal(await page.locator('#reduced-motion').isChecked(), false);
+    assert.equal(
+      await page.locator('#overlay').isVisible(),
+      false,
+      'effects shortcut does not pause',
+    );
+    await page.locator('#mobile-effects-mode').tap();
+    assert.equal(await page.locator('#reduced-motion').isChecked(), true);
+    const padFill = await page.locator('.direction-pad').evaluate((pad) => {
+      const bounds = pad.getBoundingClientRect();
+      return ['left', 'right'].every((action) => {
+        const button = pad.querySelector(`[data-action="${action}"]`).getBoundingClientRect();
+        return (
+          Math.abs(button.top - bounds.top) < 0.1 && Math.abs(button.bottom - bounds.bottom) < 0.1
+        );
+      });
+    });
+    assert.ok(padFill, `${width}x${height}: side directions must fill the pad height`);
+    for (const action of ['counter', 'rotate']) {
+      const centered = await page.locator(`[data-action="${action}"]`).evaluate((button) => {
+        const target = button.getBoundingClientRect();
+        const artwork = button.querySelector('svg').getBoundingClientRect();
+        return (
+          Math.abs(target.x + target.width / 2 - artwork.x - artwork.width / 2) < 0.1 &&
+          Math.abs(target.y + target.height / 2 - artwork.y - artwork.height / 2) < 0.1
+        );
+      });
+      assert.ok(centered, `${width}x${height}: ${action} icon must be centered`);
+    }
     for (const [theme, label] of [
       ['Afterglow', 'AFTERGLOW'],
       ['Deep Blue', 'DEEP BLUE'],
@@ -76,124 +180,115 @@ try {
       await button.tap();
       assert.equal(await button.getAttribute('aria-pressed'), 'true');
       assert.equal(await page.locator('#theme-name').textContent(), label);
-      assert.match(await page.locator('#track-name').textContent(), new RegExp(theme));
-      assert.equal(
-        await page.locator('#overlay').isVisible(),
-        false,
-        'Changing mood keeps the game running',
-      );
+      assert.equal(await page.locator('#overlay').isVisible(), false);
     }
-    const dockDuringShake = await page.evaluate(() => {
+    const anchored = await page.evaluate(() => {
       document.querySelector('#app').style.transform = 'translate3d(8px, 11px, 0)';
-      const bounds = document.querySelector('.site-footer').getBoundingClientRect().toJSON();
+      const positions = ['.site-footer', '.touch-controls'].map((selector) =>
+        document.querySelector(selector).getBoundingClientRect().toJSON(),
+      );
       document.querySelector('#app').style.transform = '';
-      return bounds;
+      return positions;
     });
-    assert.equal(
-      dockDuringShake.top,
-      geometry.dock.top,
-      'The music dock stays anchored during screen shake',
-    );
-    for (const action of ['left', 'rotate', 'right', 'hold', 'down', 'drop'])
+    assert.equal(anchored[0].top, layout.music.top);
+    assert.equal(anchored[1].top, layout.deck.top);
+    for (const action of ['left', 'counter', 'rotate', 'right', 'hold'])
       await page.locator(`[data-action="${action}"]`).tap();
+    await page.waitForFunction(() => document.querySelector('[data-action="hold"]').disabled);
+    const usedHold = await page
+      .locator('[data-action="hold"]')
+      .evaluate((button) => getComputedStyle(button).opacity);
+    assert.ok(Number(usedHold) < 0.5);
+    await page.locator('[data-action="down"]').tap();
+    await page.locator('[data-action="drop"]').tap();
+    await page.waitForFunction(() => !document.querySelector('[data-action="hold"]').disabled);
     await page.waitForFunction(() => Number(document.querySelector('#score').textContent) > 0);
-    assert.match(await page.locator('#hold-caption').textContent(), /swap/);
-    await page.screenshot({ path: `artifacts/mobile-play-${width}.png`, fullPage: true });
+    if (mode === 'monotris') {
+      // Build two short columns through real controls to charge the actual app.
+      await page.locator('#board').tap();
+      for (let placement = 0; placement < 26; placement++) {
+        if (await page.locator('#resonance').isEnabled()) break;
+        await page.keyboard.press(placement % 2 ? 'ArrowLeft' : 'ArrowRight');
+        await page.locator('[data-action="drop"]').tap();
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+      }
+      await page.getByRole('button', { name: 'Activate Resonance', exact: true }).waitFor();
+      assert.equal(await page.locator('#resonance').isEnabled(), true);
+      await page.screenshot({ path: 'artifacts/mobile-resonance-game.png' });
+      await page.locator('#resonance').tap();
+      await page.waitForFunction(
+        () => document.querySelector('#charge-percent').textContent === '0%',
+      );
+      assert.equal(await page.locator('#resonance').isDisabled(), true);
+    }
+    await page.screenshot({ path: `artifacts/mobile-play-${width}-${height}-${mode}.png` });
     await page.getByRole('button', { name: 'Pause game', exact: true }).tap();
     await page.getByRole('button', { name: 'Keep flowing' }).waitFor();
     assert.equal(await page.locator('#pause-label').innerText(), 'Resume');
+    assert.equal(await page.locator('[data-action]:enabled').count(), 0);
+    await geometry(page, width, height, 'paused');
     await page.getByRole('button', { name: 'Keep flowing' }).tap();
     await page.getByRole('button', { name: 'Leaderboard', exact: true }).tap();
     await page.getByLabel('Player name', { exact: true }).fill('PHONE PLAYER');
-    const leaderboardBounds = await page.locator('#leaderboard-dialog').boundingBox();
-    assert.ok(leaderboardBounds.x >= 0 && leaderboardBounds.x + leaderboardBounds.width <= width);
-    await page.screenshot({ path: `artifacts/mobile-leaderboard-${width}.png`, fullPage: true });
+    const dialog = await page.locator('#leaderboard-dialog').boundingBox();
+    assert.ok(
+      dialog.x >= 0 &&
+        dialog.x + dialog.width <= width &&
+        dialog.y >= 0 &&
+        dialog.y + dialog.height <= height,
+    );
+    assert.equal(await page.locator('[data-action]:enabled').count(), 0);
+    await page.screenshot({ path: `artifacts/mobile-leaderboard-${width}-${height}.png` });
     await page.getByRole('button', { name: 'Close leaderboard', exact: true }).tap();
-    await page.getByRole('button', { name: 'Keep flowing' }).waitFor();
     await page.getByRole('button', { name: 'Keep flowing' }).tap();
-    results.push({ mode, width, height, geometry, touchActions: true });
+    for (let index = 0; index < 55; index++) {
+      if (await page.getByRole('button', { name: 'One more journey' }).isVisible()) break;
+      await page.locator('[data-action="drop"]').tap();
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    }
+    await page.getByRole('button', { name: 'One more journey' }).waitFor();
+    await geometry(page, width, height, 'game over');
+    await page.screenshot({ path: `artifacts/mobile-over-${width}-${height}-${mode}.png` });
+    await page.getByRole('button', { name: 'Back to frequencies' }).tap();
+    await page.locator('#mobile-mode').selectOption('fusion');
+    await geometry(page, width, height, 'Fusion setup');
+    assert.equal(await page.locator('.touch-controls').isVisible(), false);
+    if (width === 768) {
+      await page.getByRole('button', { name: 'Enter the flow' }).tap();
+      await page.waitForFunction(() => document.body.classList.contains('in-run'));
+      await page.setViewportSize({ width: 896, height: 768 });
+      await geometry(page, 896, 768, 'unfold resize');
+    }
+    results.push({ width, height, mode, layout });
     await context.close();
   }
-
-  const context = await browser.newContext({
+  const touch = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
   });
-  const page = await context.newPage();
-  page.on('pageerror', (error) => errors.push(error.message));
-  // Serve the fixture normally so LAN tests retain the real connection's address space.
-  await page.goto(`${base}/tests/fixtures/touch-probe.html`);
-  await page.evaluate(async () => {
-    const { InputController } = await import('/src/input.ts');
-    for (const action of ['left', 'right', 'rotate', 'down', 'hold', 'drop']) {
-      const button = document.createElement('button');
-      button.dataset.action = action;
-      button.textContent = action;
-      button.style.cssText = 'width:100px;height:70px;touch-action:none';
-      document.querySelector('#controls').append(button);
-    }
-    const state = { x: 0, softDrop: false, rotations: 0, holds: 0, drops: 0 };
-    const input = new InputController({
-      move: (direction) => (state.x += direction),
-      softDrop: (value) => (state.softDrop = value),
-      rotate: () => state.rotations++,
-      hold: () => state.holds++,
-      drop: () => state.drops++,
-      resonate: () => {},
-      pause: () => {},
-      mute: () => {},
-      fullscreen: () => {},
-      start: () => {},
-      isPlaying: () => true,
-      isReady: () => false,
-    });
-    window.touchProbe = { input, state };
-  });
-  const session = await context.newCDPSession(page);
-  const point = async (action, id) => {
-    const bounds = await page.locator(`[data-action="${action}"]`).boundingBox();
-    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2, id };
-  };
-  const left = await point('left', 1);
-  const down = await point('down', 2);
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left] });
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left, down] });
-  assert.equal(await page.evaluate(() => window.touchProbe.state.softDrop), true);
-  const beforeRepeat = await page.evaluate(() => window.touchProbe.state.x);
-  await page.evaluate(() => window.touchProbe.input.update(0.2));
-  assert.ok((await page.evaluate(() => window.touchProbe.state.x)) < beforeRepeat);
-  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  assert.equal(await page.evaluate(() => window.touchProbe.state.softDrop), false);
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [left, down] });
-  assert.equal(await page.evaluate(() => window.touchProbe.state.softDrop), true);
-  await session.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
-  assert.equal(await page.evaluate(() => window.touchProbe.state.softDrop), false);
-  const released = await page.evaluate(() => window.touchProbe.state.x);
-  await page.evaluate(() => window.touchProbe.input.update(1));
-  assert.equal(await page.evaluate(() => window.touchProbe.state.x), released);
-  for (const action of ['rotate', 'hold', 'drop'])
-    await page.locator(`[data-action="${action}"]`).tap();
-  const state = await page.evaluate(() => {
-    window.touchProbe.input.dispose();
-    return window.touchProbe.state;
-  });
-  assert.equal(state.rotations, 1);
-  assert.equal(state.holds, 1);
-  assert.equal(state.drops, 1);
+  const nativeInput = await checkNativeControls(touch, base, errors);
+  await touch.close();
+  const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await desktop.goto(base);
+  for (const width of [1440, 390]) {
+    await desktop.setViewportSize({ width, height: 1000 });
+    assert.equal(await desktop.locator('.touch-controls').isVisible(), false);
+    assert.equal(await desktop.locator('.mobile-setup').isVisible(), false);
+  }
+  await desktop.close();
   assert.deepEqual(errors, []);
   await writeFile(
     'artifacts/mobile-smoke.json',
-    JSON.stringify({ results, multiTouch: state, browserErrors: errors }, null, 2),
+    JSON.stringify({ results, nativeInput, browserErrors: errors }, null, 2),
   );
   console.log(
     JSON.stringify({
       viewports: results.map(({ width, height }) => [width, height]),
-      nativeMultiTouch: true,
+      nativeInput,
       browserErrors: errors,
     }),
   );
-  await context.close();
 } finally {
   await browser.close();
 }

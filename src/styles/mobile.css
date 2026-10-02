@@ -107,25 +107,6 @@
     margin: 0 5%;
     padding: 17px 0;
   }
-  .touch-controls {
-    display: flex;
-    gap: 4px;
-    margin-top: 13px;
-  }
-  .touch-controls button {
-    background: #183526ad;
-    border: 1px solid #6f9c7b35;
-    border-radius: 5px;
-    flex: 1;
-    min-height: 36px;
-    touch-action: none;
-    font-size: 15px;
-  }
-  .touch-controls button:first-child,
-  .touch-controls button:last-child {
-    font-size: 7px;
-    letter-spacing: 0.5px;
-  }
   .overlay-content {
     padding: 10px 15px 25px;
   }
@@ -317,12 +298,6 @@
   }
   .keyboard-strip {
     display: none;
-  }
-  .touch-controls {
-    gap: 3px;
-  }
-  .touch-controls button {
-    min-height: 38px;
   }
   .pace button span {
     font-size: 7px;

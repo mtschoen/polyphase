@@ -8,9 +8,11 @@ An original falling-block arcade with every piece size from one to six squares, 
 
 To run locally, double-click **PLAY.bat**, then open [the local game](http://127.0.0.1:5173).
 
-For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. During play, the board and large touch controls fit portrait or landscape; you can hold a direction while using another finger to rotate or drop. Audio starts with your first play gesture.
+For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. Setup and play fit the viewport without page scrolling in portrait or landscape. Compact mode and pace selectors leave room for the board. Audio starts with your first play gesture.
 
-During phone play, the bright **Pause / Resume** button stays above the board. The bottom music bar shows the current track and keeps all three atmosphere buttons within reach, so you can change the music and mood without pausing. It stays anchored during screen shake.
+During phone play, the bright **Pause / Resume** button stays above the board. The music bar sits below the header, with the **FULL FX / CALM FX** shortcut and all three atmosphere buttons available without pausing. Fullscreen is available in the header. The bottom control deck and music bar stay anchored during screen shake.
+
+The mobile sidebar uses larger labels and shows your personal best. Roomier Fold layouts also show the board dimensions, run timer and extra piece previews. Very short layouts omit level/line counts or upcoming previews to keep Hold and Resonance visible. The GitHub link is also available in Help.
 
 ## Choose your pieces
 
@@ -28,11 +30,11 @@ Choose Fusion, then toggle any combination of the six size buttons. For example,
 
 Every shape can rotate. Mirror-distinct variants are separate bag entries, including all seven familiar four-square pieces. The [one-sided polyomino counts](https://oeis.org/A000988/list) give 89 playable shapes across the six sizes. The underlying free-shape generator still deduplicates reflection before the playable catalog adds the missing mirror variants.
 
-Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cleared lines increases the level. Chain line clears for combo bonuses. Fill your **Resonance** meter through placements and clears, then press Enter to dissolve the bottom four rows and give yourself breathing room.
+Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cleared lines increases the level. Chain line clears for combo bonuses. Fill your **Resonance** meter through placements and clears, then press Enter or tap its glowing **ACTIVATE** button to dissolve the bottom four rows and give yourself breathing room. Its charged pulse becomes a steady glow when either the game or operating system requests reduced motion.
 
 ## Feel every placement
 
-- Luminous beveled blocks, landing guide, hold slot and four upcoming pieces.
+- Luminous beveled blocks, landing guide, hold slot and up to four upcoming pieces, with fewer previews on compact touch layouts.
 - Glowing sparks, white-hot centers, shards and dust fan out on landing, with short trails on hard drops. Clear beams and broad shockwaves burst beyond the board edges, with stronger screen shake for bigger clears. The landing guide stays readable through the effects.
 - A GPU-rendered orbital halo, moving aurora, stars and drifting geometry.
 - Three atmospheres: Eventide, Afterglow and Deep Blue, with matching original musical palettes.
@@ -45,16 +47,18 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 | Action                  | Keyboard              |
 | ----------------------- | --------------------- |
 | Move                    | Left / Right or A / D |
-| Rotate clockwise        | Up, X or E            |
+| Rotate clockwise        | X or E                |
 | Rotate counterclockwise | Z or Q                |
 | Soft drop               | Down or S             |
-| Hard drop               | Space                 |
+| Hard drop               | Up / W / Space        |
 | Hold / swap             | C or Shift            |
 | Resonance               | Enter                 |
 | Pause / resume          | P or Escape           |
 | Mute / fullscreen       | M / F                 |
 
-Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** is an opt-in setting that suppresses animated particles and shake; an explicitly saved choice is respected. The **FULL FX / CALM FX** button below the board toggles it directly.
+On touch screens, the bottom-left D-pad moves left/right, soft-drops while holding Down, and hard-drops once when pressing Up. Only one D-pad direction can be active at a time. The right side has equal counterclockwise/clockwise rotation buttons, with a wide **Hold** below them. Buttons expand to fill their control areas, including the side areas in landscape. Left and Right fill the D-pad height; Up and Down split its middle column. Touch movement starts with one step, waits 320 ms before repeating, then moves one step every 110 ms while held. Keyboard repeat remains faster. Hold dims after use until the next piece; its preview dims too. Generous inactive gaps separate actions. Contacts stay on their original action even if your finger drifts; lift before changing direction. You can move or soft-drop while rotating with another finger. Mouse-only screens keep the keyboard controls without the touch deck.
+
+Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** in Settings suppresses animated particles and shake; an explicitly saved choice is respected. The **FULL FX / CALM FX** shortcut sits below the board on desktop and in the music bar on touch screens.
 
 ## Your leaderboard
 

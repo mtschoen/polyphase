@@ -36,6 +36,19 @@ try {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByLabel('Spoken clear callouts', { exact: true }).uncheck();
     await page.getByRole('button', { name: 'Close settings' }).click();
+    const effects = page.locator(mobile ? '#mobile-effects-mode' : '#effects-mode');
+    await effects.click();
+    assert.equal(await effects.textContent(), 'CALM FX');
+    await page.reload();
+    await page.getByRole('button', { name: 'Enter the flow' }).waitFor();
+    assert.equal(await effects.textContent(), 'CALM FX', 'effects preference persists');
+    assert.equal(await page.locator('#reduced-motion').isChecked(), true);
+    await effects.click();
+    assert.equal(await effects.textContent(), 'FULL FX');
+    assert.equal(await page.locator('#reduced-motion').isChecked(), false);
+    await page.getByRole('button', { name: 'How to play', exact: true }).click();
+    assert.equal(await page.locator('#help-dialog .source-link').isVisible(), true);
+    await page.getByRole('button', { name: 'Close help', exact: true }).click();
     await page.getByRole('button', { name: 'Enter the flow' }).click();
     await page.waitForFunction(() => document.querySelector('#overlay').hidden);
     await page.getByRole('button', { name: 'Afterglow atmosphere' }).click();
@@ -50,8 +63,15 @@ try {
     } else {
       await page.locator('#board').click();
       await page.keyboard.press('ArrowRight');
-      await page.keyboard.press('ArrowUp');
-      await page.keyboard.press('Space');
+      await page.keyboard.press('KeyX');
+      for (const key of ['ArrowUp', 'KeyW', 'Space']) {
+        const previousScore = Number(await page.locator('#score').textContent());
+        await page.keyboard.press(key);
+        await page.waitForFunction(
+          (previous) => Number(document.querySelector('#score').textContent) > previous,
+          previousScore,
+        );
+      }
     }
     await page.waitForFunction(() => Number(document.querySelector('#score').textContent) > 0);
     await page.screenshot({

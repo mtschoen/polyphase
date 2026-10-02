@@ -28,9 +28,14 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `src/impact-settings.ts`, `src/juice-lab.ts`: normalized impact controls and the hidden Konami preview panel. Stored multipliers stay absolute; percentages are relative to the tuned defaults.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
 
-The footer and keyboard strip are mounted outside `#app`; this keeps the fixed mobile music bar independent of the game's shake transform. Keep mobile root overflow clipped so shake cannot widen the layout viewport.
+The footer, keyboard strip and touch control deck are mounted outside `#app`; this keeps the mobile music bar below the header and bottom controls independent of the game's shake transform. Keep mobile root overflow clipped and size the board to the available dynamic viewport so setup and play do not scroll. Touch layouts apply only to coarse pointers.
+
+The touch D-pad owns one contact at a time; actions stay captured until release. Touch horizontal repeat waits 320 ms, then repeats at 110 ms with at most one step per frame; retain the faster keyboard repeat. D-pad side buttons span its height and rotation icons use centered SVGs. Up hard-drops once, Down soft-drops, and the right grid has both rotations above Hold. Project Hold and Resonance availability from the engine independently of preview-image caching; synchronize disabled controls immediately on status changes. Resonance's charged pulse respects both app and OS reduced motion.
+
+Keep a wider inactive margin between the D-pad and action pad (20px on the narrowest screen, scaling to 64px). `touch-telemetry.css` owns readable mobile statistics and available-height compaction; do not let previews cover Resonance or the control deck. The mobile music bar exposes the effects shortcut, synchronized with the desktop shortcut and Settings through `updateEffectsControls`. Fullscreen stays in the header; Help retains the GitHub link. Compacting the sidebar must preserve personal best, Hold and Resonance.
 
 Inject random sources and advance simulation time explicitly in tests. No wall-clock assertions.
+Keyboard Up, W and Space hard-drop once per press; X/E rotate clockwise and Z/Q counterclockwise. Keep the help dialog, keyboard strip and browser gameplay checks aligned with these bindings. The Konami sequence still uses arrow keys.
 Keep game logic independent of DOM, audio, and graphics. Never use em dashes.
 Writing agents must use sibling worktrees; the primary checkout remains on main.
 Browser visual and audio paths require runtime smoke testing; report measured coverage honestly.

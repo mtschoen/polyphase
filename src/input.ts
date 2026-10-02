@@ -1,6 +1,7 @@
 export interface Actions {
   move(direction: number): void;
   softDrop(value: boolean): void;
+  softDropOnce(): void;
   rotate(direction: 1 | -1): void;
   drop(): void;
   hold(): void;
@@ -18,6 +19,7 @@ export class InputController {
   private horizontal = 0;
   private repeatTime = 0;
   private pointers = new Map<number, string>();
+  private padPointer: number | undefined;
   private keys = new Map<string, string>();
   private buttons: HTMLButtonElement[];
   constructor(private actions: Actions) {
@@ -30,20 +32,45 @@ export class InputController {
       button.addEventListener('pointerup', this.pointerUp);
       button.addEventListener('pointercancel', this.pointerUp);
       button.addEventListener('lostpointercapture', this.pointerUp);
+      button.addEventListener('click', this.buttonClick);
     });
   }
   private pointerDown = (event: PointerEvent): void => {
     const button = event.currentTarget as HTMLButtonElement;
     event.preventDefault();
+    if (
+      this.unavailable(button) ||
+      event.button > 0 ||
+      this.pointers.has(event.pointerId) ||
+      (button.dataset.pad && this.padPointer !== undefined)
+    )
+      return;
     button.setPointerCapture(event.pointerId);
+    if (button.dataset.pad) this.padPointer = event.pointerId;
     const action = button.dataset.action!;
     this.pointers.set(event.pointerId, action);
     this.press(action);
   };
   private pointerUp = (event: PointerEvent): void => {
+    if (this.padPointer === event.pointerId) this.padPointer = undefined;
     const action = this.pointers.get(event.pointerId);
     this.pointers.delete(event.pointerId);
     if (action) this.releaseIfUnused(action);
+  };
+  private unavailable(button: HTMLButtonElement): boolean {
+    return button.disabled || !this.actions.isPlaying() || !!document.querySelector('dialog[open]');
+  }
+  private buttonClick = (event: MouseEvent): void => {
+    const button = event.currentTarget as HTMLButtonElement;
+    // Pointer actions already fire on contact. Preserve native keyboard/assistive activation.
+    if (event.detail !== 0 || this.unavailable(button)) return;
+    const action = button.dataset.action!;
+    if (action === 'down') {
+      this.actions.softDropOnce();
+      return;
+    }
+    this.press(action);
+    this.releaseIfUnused(action);
   };
   private keyDown = (event: KeyboardEvent): void => {
     if (
@@ -90,7 +117,8 @@ export class InputController {
         KeyD: 'right',
         ArrowDown: 'down',
         KeyS: 'down',
-        ArrowUp: 'rotate',
+        ArrowUp: 'drop',
+        KeyW: 'drop',
         KeyX: 'rotate',
         KeyE: 'rotate',
         KeyZ: 'counter',
@@ -126,7 +154,7 @@ export class InputController {
       const direction = action === 'left' ? -1 : 1;
       this.held.set(action, direction);
       this.horizontal = direction;
-      this.repeatTime = 0.16;
+      this.repeatTime = this.isTouchMovement() ? 0.32 : 0.16;
       this.actions.move(direction);
     } else if (action === 'down') this.actions.softDrop(true);
     else if (action === 'rotate' || action === 'counter')
@@ -140,23 +168,38 @@ export class InputController {
     if (action === 'left' || action === 'right') {
       this.held.delete(action);
       this.horizontal = [...this.held.values()].at(-1) || 0;
-      this.repeatTime = 0.1;
+      this.repeatTime = this.isTouchMovement() ? 0.32 : 0.1;
     }
   }
   clear = (): void => {
     this.held.clear();
     this.keys.clear();
     this.pointers.clear();
+    this.padPointer = undefined;
     this.horizontal = 0;
     this.actions.softDrop(false);
   };
   update(delta: number): void {
     if (!this.actions.isPlaying() || !this.horizontal) return;
     this.repeatTime -= delta;
+    if (this.isTouchMovement()) {
+      if (this.repeatTime <= 0) {
+        this.actions.move(this.horizontal);
+        // A delayed frame must not turn a held thumb into a burst of moves.
+        this.repeatTime = 0.11;
+      }
+      return;
+    }
     while (this.repeatTime <= 0) {
       this.actions.move(this.horizontal);
       this.repeatTime += 0.055;
     }
+  }
+  private isTouchMovement(): boolean {
+    const action = this.horizontal < 0 ? 'left' : 'right';
+    return (
+      [...this.pointers.values()].includes(action) && ![...this.keys.values()].includes(action)
+    );
   }
   dispose(): void {
     this.clear();
@@ -168,6 +211,7 @@ export class InputController {
       button.removeEventListener('pointerup', this.pointerUp);
       button.removeEventListener('pointercancel', this.pointerUp);
       button.removeEventListener('lostpointercapture', this.pointerUp);
+      button.removeEventListener('click', this.buttonClick);
     }
   }
 }

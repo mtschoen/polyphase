@@ -11,7 +11,13 @@ import {
 import { AudioEngine, soundtrackForSizes } from './audio';
 import { Universe } from './universe';
 import { BoardRenderer, drawPreview } from './renderer';
-import { createInterface, renderOverlay, setText } from './interface';
+import {
+  createInterface,
+  renderOverlay,
+  setText,
+  updateControls,
+  updateEffectsControls,
+} from './interface';
 import { InputController } from './input';
 import { loadSettings, saveSettings, readBest, saveBest } from './storage';
 import { Announcer } from './announcer';
@@ -75,11 +81,7 @@ function applySettings(): void {
   element<HTMLInputElement>('#volume').value = String(Math.round(settings.volume * 100));
   element<HTMLInputElement>('#reduced-motion').checked = settings.reducedMotion;
   element<HTMLInputElement>('#announcer').checked = settings.announcer;
-  setText('#effects-mode', settings.reducedMotion ? 'CALM FX' : 'FULL FX');
-  element('#effects-mode').setAttribute(
-    'aria-label',
-    settings.reducedMotion ? 'Enable full effects' : 'Use reduced effects',
-  );
+  updateEffectsControls(settings.reducedMotion);
   element<HTMLInputElement>('#ghost').checked = settings.ghost;
   setText('#volume-value', `${Math.round(settings.volume * 100)}%`);
   updateTrack();
@@ -171,6 +173,8 @@ function menu(): void {
   renderer.reset();
   previousPreviews = '';
   best = readBest(game.recordKey, difficulty);
+  element<HTMLSelectElement>('#mobile-mode').value = mode;
+  element<HTMLSelectElement>('#mobile-difficulty').value = difficulty;
   document.documentElement.style.setProperty('--board-ratio', String(game.width / game.height));
   setText('#board-size', `${game.width} × ${game.height} MATRIX`);
   requestAnimationFrame(() => renderer.resize());
@@ -181,6 +185,7 @@ const input = new InputController({
   softDrop: (value) => {
     game.softDrop = value;
   },
+  softDropOnce: () => game.softDropOnce(),
   rotate: (direction) => game.rotate(direction),
   drop: () => game.hardDrop(),
   hold: () => game.hold(),
@@ -231,6 +236,7 @@ function syncStatus(): void {
   if (previousStatus === game.status) return;
   previousStatus = game.status;
   renderOverlay(game.status, game.score);
+  updateControls(game);
   audio.setPlaying(game.status === 'playing');
   if (game.status !== 'playing') announcer.cancel();
   document.body.classList.toggle('playing', game.status === 'playing' && !settings.muted);
@@ -244,7 +250,7 @@ function syncStatus(): void {
   document.body.classList.toggle('in-run', game.status !== 'ready');
   document
     .querySelectorAll<HTMLButtonElement | HTMLInputElement>(
-      '[data-mode], [data-difficulty], [data-fusion-size]',
+      '[data-mode], [data-difficulty], [data-fusion-size], #mobile-mode, #mobile-difficulty',
     )
     .forEach((button) => {
       button.disabled = inRun;
@@ -287,7 +293,6 @@ function updatePreviews(): void {
   drawPreview(element<HTMLCanvasElement>('#held'), game.held);
   for (let index = 0; index < 4; index++)
     drawPreview(element<HTMLCanvasElement>(`#next-${index}`), game.queue[index] || null);
-  setText('#hold-caption', game.held ? 'Press C to swap' : 'A little breathing room');
 }
 function changeMode(next: Mode): void {
   if (game.status === 'playing' || game.status === 'paused') return;
@@ -347,6 +352,14 @@ document.querySelectorAll<HTMLElement>('[data-difficulty]').forEach((button) =>
   }),
 );
 element('#mute').addEventListener('click', mute);
+element('#mobile-mode').addEventListener('change', (event) =>
+  changeMode((event.target as HTMLSelectElement).value as Mode),
+);
+element('#mobile-difficulty').addEventListener('change', (event) =>
+  element<HTMLButtonElement>(
+    `[data-difficulty="${(event.target as HTMLSelectElement).value}"]`,
+  ).click(),
+);
 element('#leaderboard').addEventListener('click', openLeaderboard);
 element('#fullscreen').addEventListener('click', () => void fullscreen());
 element('#pause').addEventListener('click', pause);
@@ -395,10 +408,12 @@ element('#reduced-motion').addEventListener('change', () => {
   applySettings();
   persistSettings();
 });
-element('#effects-mode').addEventListener('click', () => {
-  settings.reducedMotion = !settings.reducedMotion;
-  applySettings();
-  persistSettings();
+document.querySelectorAll('[data-effects-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    settings.reducedMotion = !settings.reducedMotion;
+    applySettings();
+    persistSettings();
+  });
 });
 element('#announcer').addEventListener('change', () => {
   settings.announcer = element<HTMLInputElement>('#announcer').checked;
@@ -437,6 +452,7 @@ window.addEventListener('blur', () => {
   if (game.status === 'playing') pause();
 });
 window.addEventListener('resize', () => {
+  input.clear();
   previousPreviews = '';
 });
 window.addEventListener('pagehide', (event) => {
@@ -465,6 +481,7 @@ function frame(now: number): void {
   renderer.render(game, delta, now / 1000);
   syncStatus();
   updatePreviews();
+  updateControls(game);
   setText('#score', String(game.score).padStart(6, '0'));
   setText('#best', best.toLocaleString());
   setText('#level', String(game.level).padStart(2, '0'));
@@ -475,8 +492,6 @@ function frame(now: number): void {
   );
   element('#charge-fill').style.width = `${game.charge}%`;
   setText('#charge-percent', `${Math.floor(game.charge)}%`);
-  setText('#charge-label', game.charge >= 100 ? 'READY. PRESS ENTER.' : 'FIND YOUR RHYTHM');
-  element('#resonance').classList.toggle('ready', game.charge >= 100);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

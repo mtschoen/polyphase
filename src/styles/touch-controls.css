@@ -1,0 +1,140 @@
+@media (pointer: coarse) {
+  .in-run .touch-controls {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 7;
+    display: grid;
+    grid-template-columns: minmax(148px, 3fr) minmax(96px, 2fr);
+    align-items: stretch;
+    gap: clamp(24px, 7vw, 64px);
+    height: var(--deck-space);
+    margin: 0;
+    padding: 8px max(8px, env(safe-area-inset-right, 0px))
+      calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+    background: linear-gradient(0deg, #091c17, #0b2119ed);
+    border-top: 1px solid #78e6c233;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .direction-pad {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 10px);
+  }
+  .action-pad {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 14px clamp(8px, 2vw, 12px);
+  }
+  .touch-controls button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid #83c5a780;
+    border-radius: 12px;
+    background: #193e30;
+    color: #e8fff3;
+    font-size: 26px;
+    line-height: 1;
+    touch-action: none;
+    box-shadow: 0 3px 0 #04110c;
+  }
+  .touch-controls button small {
+    font-size: 8px;
+    letter-spacing: 0.6px;
+    margin-top: 3px;
+  }
+  .touch-controls button:active:not(:disabled) {
+    background: #397859;
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .touch-controls button:disabled {
+    opacity: 0.35;
+    box-shadow: none;
+  }
+  .touch-controls [data-action='drop'] {
+    grid-column: 2;
+    grid-row: 1;
+    border-color: #f1d58e99;
+    color: #f1d58e;
+  }
+  .touch-controls [data-action='left'] {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .touch-controls [data-action='right'] {
+    grid-column: 3;
+    grid-row: 1 / -1;
+  }
+  .touch-controls [data-action='down'] {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .touch-controls button svg {
+    display: block;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    stroke-width: 2;
+  }
+  .touch-controls [data-action='counter'] svg {
+    transform: scaleX(-1);
+  }
+  .touch-controls [data-action='hold'] {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+}
+@media (pointer: coarse) and (min-width: 700px) {
+  .in-run .touch-controls {
+    padding-inline: max(20px, env(safe-area-inset-left, 0px))
+      max(20px, env(safe-area-inset-right, 0px));
+  }
+}
+@media (pointer: coarse) and (max-width: 319px) {
+  :root {
+    --touch-size: 44px;
+  }
+  .in-run .touch-controls {
+    gap: 20px;
+  }
+  .direction-pad {
+    gap: 8px;
+  }
+  .action-pad {
+    column-gap: 8px;
+  }
+  .fusion-sizes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  .in-run .touch-controls {
+    display: flex;
+    justify-content: space-between;
+    height: calc(
+      100dvh - var(--mobile-header) - var(--mobile-music) - env(safe-area-inset-top, 0px)
+    );
+    padding-inline: max(8px, env(safe-area-inset-left, 0px))
+      max(8px, env(safe-area-inset-right, 0px));
+    background: none;
+    border: 0;
+    pointer-events: none;
+  }
+  .direction-pad,
+  .action-pad {
+    width: calc((100vw - min(520px, 100vw - 344px)) / 2 - 16px);
+    pointer-events: auto;
+  }
+}
