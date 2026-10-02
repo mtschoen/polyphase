@@ -151,11 +151,17 @@ jobs:
           ref: gh-pages
           path: stored-site
           persist-credentials: false
-      - name: Download static builds
+      - name: Download production build
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: site-*
-          path: incoming
+          name: site-production
+          path: incoming/site-production
+      - name: Download preview build
+        if: needs.prepare.outputs.preview-path != '' && needs.prepare.outputs.remove != 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: site-preview
+          path: incoming/site-preview
       - name: Assemble production and previews without executing build content
         env:
           PREVIEW_PATH: ${{ needs.prepare.outputs.preview-path }}
