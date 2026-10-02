@@ -1,5 +1,6 @@
 import { PIECE_SIZES, PURE_MODES, THEMES, type GameStatus } from './game/types';
 import { IMPACT_CONTROLS, IMPACT_PERCENT_RANGE } from './impact-settings';
+import type { GameEngine } from './game/engine';
 
 const icons = {
   sound: '<path d="m11 5-6 4H2v6h3l6 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
@@ -32,6 +33,7 @@ export function createInterface(): void {
     </header>
     <main class="experience">
       <aside class="journey">
+        <div class="mobile-setup"><label>Frequency<select id="mobile-mode" aria-label="Game mode">${PURE_MODES.map(({ mode, name }) => `<option value="${mode}" ${mode === 'pentris' ? 'selected' : ''}>${name}</option>`).join('')}<option value="fusion">Fusion</option></select></label><label>Pace<select id="mobile-difficulty" aria-label="Difficulty"><option value="flow">Flow</option><option value="rush">Rush</option></select></label></div>
         <div class="eyebrow"><span class="small-line"></span> ONE SQUARE. SIX DIMENSIONS.</div>
         <h1>Find your<br><em>flow state.</em></h1>
         <p class="intro-copy">A familiar rhythm.<br>A whole new dimension.</p>
@@ -49,7 +51,6 @@ export function createInterface(): void {
         <div class="board-heading"><span id="board-title">05 <b>/</b> PENTRIS</span><span id="game-state"><i></i> STANDBY</span><button id="pause" class="icon-button" aria-label="Pause game" title="Pause (P)">${icon('pause')}<span id="pause-label">Pause</span></button></div>
         <div class="board-frame" id="board-frame"><div class="board-corner top-left"></div><div class="board-corner top-right"></div><canvas id="board" aria-label="Falling polyomino game board"></canvas><div id="overlay" class="board-overlay"></div><div class="board-corner bottom-left"></div><div class="board-corner bottom-right"></div><div id="callout" aria-live="polite"></div></div>
         <div class="board-foot"><span><i class="live-dot"></i> <span id="board-size">12 × 22 MATRIX</span></span><button id="effects-mode" aria-label="Use reduced effects" title="Toggle full or reduced effects">FULL FX</button><span id="run-time">00:00</span></div>
-        <div class="touch-controls" aria-label="Touch controls"><button data-action="hold" aria-label="Hold piece">HOLD</button><button data-action="left" aria-label="Move left">←</button><button data-action="rotate" aria-label="Rotate clockwise">↻</button><button data-action="right" aria-label="Move right">→</button><button data-action="down" aria-label="Soft drop">↓</button><button data-action="drop" aria-label="Hard drop">DROP</button></div>
       </section>
       <aside class="telemetry">
         <div class="score-block"><div class="eyebrow">YOUR SCORE</div><div id="score">000000</div><div class="best">PERSONAL BEST <span id="best">0</span></div></div>
@@ -59,14 +60,52 @@ export function createInterface(): void {
         <button id="resonance" class="resonance" title="Fill the meter, then press Enter to clear the bottom four rows"><span class="panel-heading"><span>✳ RESONANCE</span><kbd>↵</kbd></span><span class="charge-track"><span id="charge-fill"></span></span><span class="charge-caption"><span id="charge-label">FIND YOUR RHYTHM</span><span id="charge-percent">0%</span></span></button>
       </aside>
     </main>
+    <div class="touch-controls" role="group" aria-label="Touch controls">
+      <div class="direction-pad" role="group" aria-label="Movement and drop">
+        <button data-action="drop" data-pad="direction" aria-label="Hard drop" disabled><span aria-hidden="true">↑</span><small>DROP</small></button>
+        <button data-action="left" data-pad="direction" aria-label="Move left" disabled>←</button>
+        <button data-action="right" data-pad="direction" aria-label="Move right" disabled>→</button>
+        <button data-action="down" data-pad="direction" aria-label="Soft drop" disabled><span aria-hidden="true">↓</span><small>SOFT</small></button>
+      </div>
+      <div class="action-pad" role="group" aria-label="Rotation and hold">
+        <button data-action="counter" aria-label="Rotate counterclockwise" disabled>↶</button>
+        <button data-action="rotate" aria-label="Rotate clockwise" disabled>↷</button>
+        <button data-action="hold" aria-label="Hold piece" disabled><span>HOLD</span><small id="touch-hold-caption">NEXT PIECE</small></button>
+      </div>
+    </div>
     <footer class="site-footer"><div class="now-playing"><div class="equalizer"><i></i><i></i><i></i><i></i><i></i></div><div><span>ORIGINAL SOUND EXPERIENCE</span><strong id="track-name">Eventide <b>·</b> 5/4</strong></div></div><div class="theme-picker" role="group" aria-label="Atmosphere">${THEMES.map((theme, index) => `<button data-theme="${index}" class="theme-dot ${index === 0 ? 'selected' : ''}" style="--swatch:${theme.primary}" aria-label="${theme.name} atmosphere" aria-pressed="${index === 0}"></button>`).join('')}<span id="theme-name">EVENTIDE</span></div><a class="source-link" href="https://github.com/mtschoen/polyphase" target="_blank" rel="noopener noreferrer" aria-label="View Polyphase on GitHub (opens in a new tab)">GitHub <span aria-hidden="true">&#8599;</span></a><div class="headphone-note">◉ <span>Better with headphones</span></div></footer>
     <div class="keyboard-strip"><span><kbd>←</kbd><kbd>→</kbd> move</span><span><kbd>↑</kbd> rotate</span><span><kbd>↓</kbd> soft drop</span><span><kbd class="wide-key">SPACE</kbd> hard drop</span><span><kbd>C</kbd> hold</span><span><kbd>P</kbd> pause</span></div>
     ${settingsDialog()}
-    <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">A FAMILIAR RHYTHM, REMIXED</span><button data-close class="close-button" aria-label="Close help">×</button></div><h2>A few more squares.<br>A lot more possibility.</h2><p>Fit the falling shapes together. Fill a complete horizontal line to clear it. Keep the stack below the top.</p><div class="help-grid"><span>Move</span><kbd>← → / A D</kbd><span>Rotate clockwise</span><kbd>↑ / X / E</kbd><span>Rotate counterclockwise</span><kbd>Z / Q</kbd><span>Soft / hard drop</span><kbd>↓ / SPACE</kbd><span>Hold a piece</span><kbd>C / SHIFT</kbd><span>Resonance</span><kbd>ENTER</kbd><span>Pause</span><kbd>P / ESC</kbd><span>Mute / fullscreen</span><kbd>M / F</kbd></div><p><strong>Make some space.</strong> Each placement and cleared line charges Resonance. At 100%, press Enter to sweep away the bottom four rows.</p><p class="dialog-bottom">Choose any pure size from one to six. Fusion lets you mix your own sizes with equal chances for each. Mirrored shapes are included, including all seven classic four-square pieces.</p></dialog>
+    <dialog id="help-dialog"><div class="dialog-heading"><span class="eyebrow">A FAMILIAR RHYTHM, REMIXED</span><button data-close class="close-button" aria-label="Close help">×</button></div><h2>A few more squares.<br>A lot more possibility.</h2><p>Fit the falling shapes together. Fill a complete horizontal line to clear it. Keep the stack below the top.</p><p class="touch-help">Use the bottom pad to move left or right. Hold down for soft drop; tap up once for hard drop. The two arrows on the right rotate in opposite directions, with Hold below them. Lift your thumb before choosing another direction. Dimmed Hold becomes available with the next piece.</p><div class="help-grid"><span>Move</span><kbd>← → / A D</kbd><span>Rotate clockwise</span><kbd>↑ / X / E</kbd><span>Rotate counterclockwise</span><kbd>Z / Q</kbd><span>Soft / hard drop</span><kbd>↓ / SPACE</kbd><span>Hold a piece</span><kbd>C / SHIFT</kbd><span>Resonance</span><kbd>ENTER</kbd><span>Pause</span><kbd>P / ESC</kbd><span>Mute / fullscreen</span><kbd>M / F</kbd></div><p><strong>Make some space.</strong> Each placement and cleared line charges Resonance. At 100%, press Enter to sweep away the bottom four rows.</p><p class="dialog-bottom">Choose any pure size from one to six. Fusion lets you mix your own sizes with equal chances for each. Mirrored shapes are included, including all seven classic four-square pieces.</p></dialog>
     <div id="toast" role="status"></div>`;
   // Keep the mobile dock anchored to the viewport while the game surface shakes.
   document.body.append(document.querySelector('.site-footer')!);
   document.body.append(document.querySelector('.keyboard-strip')!);
+  document.body.append(document.querySelector('.touch-controls')!);
+}
+
+export function updateControls(game: GameEngine): void {
+  const playing = game.status === 'playing';
+  document.querySelectorAll<HTMLButtonElement>('[data-action]').forEach((button) => {
+    button.disabled = button.dataset.action === 'hold' ? !game.canHold : !playing;
+  });
+  document.querySelector('.hold-panel')!.classList.toggle('unavailable', !game.canHold);
+  setText(
+    '#hold-caption',
+    game.canHold ? (game.held ? 'Hold to swap' : 'Ready to hold') : 'Hold unavailable',
+  );
+  setText('#touch-hold-caption', game.canHold ? 'READY' : 'UNAVAILABLE');
+  const resonance = document.querySelector<HTMLButtonElement>('#resonance')!;
+  resonance.disabled = !game.canResonate;
+  resonance.classList.toggle('ready', game.canResonate);
+  resonance.setAttribute(
+    'aria-label',
+    game.canResonate ? 'Activate Resonance' : `Resonance charging: ${Math.floor(game.charge)}%`,
+  );
+  setText(
+    '#charge-label',
+    game.canResonate ? 'ACTIVATE' : game.charge >= 100 ? 'CHARGED' : 'CHARGING',
+  );
 }
 
 function settingsDialog(): string {

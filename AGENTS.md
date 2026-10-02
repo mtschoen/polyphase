@@ -27,7 +27,9 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `src/impact-settings.ts`, `src/juice-lab.ts`: normalized impact controls and the hidden Konami preview panel. Stored multipliers stay absolute; percentages are relative to the tuned defaults.
 - `src/style.css`, `src/styles/`: shared tokens, board, panels, dialogs and responsive layouts.
 
-The footer and keyboard strip are mounted outside `#app`; this keeps the fixed mobile music bar independent of the game's shake transform. Keep mobile root overflow clipped so shake cannot widen the layout viewport.
+The footer, keyboard strip and touch control deck are mounted outside `#app`; this keeps the mobile music bar below the header and bottom controls independent of the game's shake transform. Keep mobile root overflow clipped and size the board to the available dynamic viewport so setup and play do not scroll. Touch layouts apply only to coarse pointers.
+
+The touch D-pad owns one contact at a time; actions stay captured until release. Up hard-drops once, Down soft-drops, and the right grid has both rotations above Hold. Project Hold and Resonance availability from the engine independently of preview-image caching; synchronize disabled controls immediately on status changes. Resonance's charged pulse respects both app and OS reduced motion.
 
 Inject random sources and advance simulation time explicitly in tests. No wall-clock assertions.
 Keep game logic independent of DOM, audio, and graphics. Never use em dashes.

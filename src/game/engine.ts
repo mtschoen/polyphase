@@ -176,6 +176,21 @@ export class GameEngine {
     }
   }
 
+  softDropOnce(): boolean {
+    if (
+      this.status !== 'playing' ||
+      this.clearDelay > 0 ||
+      !this.active ||
+      !this.fits(this.active, this.active.x, this.active.y + 1)
+    )
+      return false;
+    this.active.y += 1;
+    this.gravityElapsed = 0;
+    this.score += 1;
+    this.events.push({ type: 'softdrop' });
+    return true;
+  }
+
   move(direction: number): boolean {
     if (
       this.status !== 'playing' ||
@@ -226,13 +241,14 @@ export class GameEngine {
   }
 
   hold(): boolean {
-    if (this.status !== 'playing' || this.clearDelay > 0 || !this.active || this.holdUsed)
-      return false;
+    if (!this.canHold) return false;
     const previous = this.held;
     const original = Object.values(polyominoesBySize)
       .flat()
       .find((piece) => piece.id === this.active!.id);
-    this.held = copyPiece(original ?? { ...this.active, cells: normalizeCells(this.active.cells) });
+    this.held = copyPiece(
+      original ?? { ...this.active!, cells: normalizeCells(this.active!.cells) },
+    );
     this.events.push({ type: 'hold' });
     if (previous) this.spawn(previous);
     else this.spawnNext();
@@ -241,13 +257,7 @@ export class GameEngine {
   }
 
   activateResonance(): boolean {
-    if (
-      this.status !== 'playing' ||
-      this.clearDelay > 0 ||
-      this.charge < 100 ||
-      !this.board.some((row) => row.some((cell) => cell !== null))
-    )
-      return false;
+    if (!this.canResonate) return false;
     const rows = Array.from({ length: 4 }, (_, index) => this.height - 4 + index);
     const cells = this.rowMarks(rows);
     this.board = [
@@ -289,6 +299,19 @@ export class GameEngine {
   /** Simulation seconds until the next piece enters after a line clear. */
   get clearDelayRemaining(): number {
     return this.clearDelay;
+  }
+
+  get canHold(): boolean {
+    return this.status === 'playing' && this.clearDelay === 0 && !!this.active && !this.holdUsed;
+  }
+
+  get canResonate(): boolean {
+    return (
+      this.status === 'playing' &&
+      this.clearDelay === 0 &&
+      this.charge >= 100 &&
+      this.board.some((row) => row.some((cell) => cell !== null))
+    );
   }
 
   private emptyRow(): (number | null)[] {

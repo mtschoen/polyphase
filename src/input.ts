@@ -1,6 +1,7 @@
 export interface Actions {
   move(direction: number): void;
   softDrop(value: boolean): void;
+  softDropOnce(): void;
   rotate(direction: 1 | -1): void;
   drop(): void;
   hold(): void;
@@ -18,6 +19,7 @@ export class InputController {
   private horizontal = 0;
   private repeatTime = 0;
   private pointers = new Map<number, string>();
+  private padPointer: number | undefined;
   private keys = new Map<string, string>();
   private buttons: HTMLButtonElement[];
   constructor(private actions: Actions) {
@@ -30,20 +32,45 @@ export class InputController {
       button.addEventListener('pointerup', this.pointerUp);
       button.addEventListener('pointercancel', this.pointerUp);
       button.addEventListener('lostpointercapture', this.pointerUp);
+      button.addEventListener('click', this.buttonClick);
     });
   }
   private pointerDown = (event: PointerEvent): void => {
     const button = event.currentTarget as HTMLButtonElement;
     event.preventDefault();
+    if (
+      this.unavailable(button) ||
+      event.button > 0 ||
+      this.pointers.has(event.pointerId) ||
+      (button.dataset.pad && this.padPointer !== undefined)
+    )
+      return;
     button.setPointerCapture(event.pointerId);
+    if (button.dataset.pad) this.padPointer = event.pointerId;
     const action = button.dataset.action!;
     this.pointers.set(event.pointerId, action);
     this.press(action);
   };
   private pointerUp = (event: PointerEvent): void => {
+    if (this.padPointer === event.pointerId) this.padPointer = undefined;
     const action = this.pointers.get(event.pointerId);
     this.pointers.delete(event.pointerId);
     if (action) this.releaseIfUnused(action);
+  };
+  private unavailable(button: HTMLButtonElement): boolean {
+    return button.disabled || !this.actions.isPlaying() || !!document.querySelector('dialog[open]');
+  }
+  private buttonClick = (event: MouseEvent): void => {
+    const button = event.currentTarget as HTMLButtonElement;
+    // Pointer actions already fire on contact. Preserve native keyboard/assistive activation.
+    if (event.detail !== 0 || this.unavailable(button)) return;
+    const action = button.dataset.action!;
+    if (action === 'down') {
+      this.actions.softDropOnce();
+      return;
+    }
+    this.press(action);
+    this.releaseIfUnused(action);
   };
   private keyDown = (event: KeyboardEvent): void => {
     if (
@@ -147,6 +174,7 @@ export class InputController {
     this.held.clear();
     this.keys.clear();
     this.pointers.clear();
+    this.padPointer = undefined;
     this.horizontal = 0;
     this.actions.softDrop(false);
   };
@@ -168,6 +196,7 @@ export class InputController {
       button.removeEventListener('pointerup', this.pointerUp);
       button.removeEventListener('pointercancel', this.pointerUp);
       button.removeEventListener('lostpointercapture', this.pointerUp);
+      button.removeEventListener('click', this.buttonClick);
     }
   }
 }

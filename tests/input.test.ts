@@ -3,6 +3,7 @@ import { InputController, type Actions } from '../src/input';
 
 class Surface extends EventTarget {
   dataset: Record<string, string> = {};
+  disabled = false;
   setPointerCapture = vi.fn();
   closest(): null {
     return null;
@@ -14,10 +15,12 @@ describe('held keyboard and touch controls', () => {
   let buttons: Record<string, Surface>;
   let actions: Actions;
   let input: InputController;
+  let dialogOpen: boolean;
 
   beforeEach(() => {
+    dialogOpen = false;
     buttons = Object.fromEntries(
-      ['left', 'right', 'down', 'rotate', 'drop', 'hold'].map((action) => {
+      ['left', 'right', 'down', 'rotate', 'counter', 'drop', 'hold'].map((action) => {
         const button = new Surface();
         button.dataset.action = action;
         return [action, button];
@@ -25,7 +28,7 @@ describe('held keyboard and touch controls', () => {
     );
     vi.stubGlobal('window', windowSurface);
     vi.stubGlobal('document', {
-      querySelector: () => null,
+      querySelector: () => (dialogOpen ? new Surface() : null),
       querySelectorAll: () => Object.values(buttons),
     });
     vi.stubGlobal('Element', Surface);
@@ -33,6 +36,7 @@ describe('held keyboard and touch controls', () => {
     actions = {
       move: vi.fn(),
       softDrop: vi.fn(),
+      softDropOnce: vi.fn(),
       rotate: vi.fn(),
       drop: vi.fn(),
       hold: vi.fn(),
@@ -118,5 +122,55 @@ describe('held keyboard and touch controls', () => {
     pointer('drop', 'pointerdown', 3);
     keyboard('keydown', 'Space');
     expect(actions.drop).not.toHaveBeenCalled();
+  });
+
+  it.each(['disabled', 'dialog', 'inactive'])('ignores touch when %s', (reason) => {
+    buttons.hold.disabled = reason === 'disabled';
+    dialogOpen = reason === 'dialog';
+    actions.isPlaying = () => reason !== 'inactive';
+    pointer('hold', 'pointerdown', 1);
+    expect(actions.hold).not.toHaveBeenCalled();
+  });
+
+  it('allows only one pad contact while the other thumb rotates', () => {
+    for (const action of ['left', 'right', 'down', 'drop'])
+      buttons[action].dataset.pad = 'direction';
+    pointer('left', 'pointerdown', 1);
+    pointer('down', 'pointerdown', 2);
+    pointer('drop', 'pointerdown', 3);
+    pointer('counter', 'pointerdown', 4);
+    expect(actions.softDrop).not.toHaveBeenCalledWith(true);
+    expect(actions.drop).not.toHaveBeenCalled();
+    expect(actions.rotate).toHaveBeenCalledWith(-1);
+    pointer('left', 'pointerup', 1);
+    input.update(1);
+    expect(actions.move).toHaveBeenCalledTimes(1);
+    // Rejected contacts never take over when the accepted contact releases.
+    expect(actions.softDrop).not.toHaveBeenCalledWith(true);
+    pointer('down', 'pointerup', 2);
+    pointer('down', 'pointerdown', 5);
+    expect(actions.softDrop).toHaveBeenLastCalledWith(true);
+  });
+
+  it('hard drops once per contact and never repeats when held or dragged', () => {
+    pointer('drop', 'pointerdown', 1);
+    pointer('drop', 'pointerdown', 1);
+    pointer('drop', 'pointermove', 1);
+    input.update(10);
+    expect(actions.drop).toHaveBeenCalledTimes(1);
+    pointer('drop', 'pointerup', 1);
+    pointer('drop', 'pointerdown', 2);
+    expect(actions.drop).toHaveBeenCalledTimes(2);
+  });
+
+  it('supports keyboard or assistive button clicks without duplicating touch clicks', () => {
+    buttons.counter.dispatchEvent(Object.assign(new Event('click'), { detail: 0 }));
+    expect(actions.rotate).toHaveBeenCalledExactlyOnceWith(-1);
+    pointer('rotate', 'pointerdown', 1);
+    pointer('rotate', 'pointerup', 1);
+    buttons.rotate.dispatchEvent(Object.assign(new Event('click'), { detail: 1 }));
+    expect(actions.rotate).toHaveBeenCalledTimes(2);
+    buttons.down.dispatchEvent(Object.assign(new Event('click'), { detail: 0 }));
+    expect(actions.softDropOnce).toHaveBeenCalledExactlyOnceWith();
   });
 });

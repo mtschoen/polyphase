@@ -8,9 +8,9 @@ An original falling-block arcade with every piece size from one to six squares, 
 
 To run locally, double-click **PLAY.bat**, then open [the local game](http://127.0.0.1:5173).
 
-For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. During play, the board and large touch controls fit portrait or landscape; you can hold a direction while using another finger to rotate or drop. Audio starts with your first play gesture.
+For a phone on the same local network, launch **PLAY-ON-PHONE.bat** (or `npm run dev:lan`) and open the printed **Network** address in its browser. Keep the computer and server running. Setup and play fit the viewport without page scrolling in portrait or landscape. Compact mode and pace selectors leave room for the board. Audio starts with your first play gesture.
 
-During phone play, the bright **Pause / Resume** button stays above the board. The bottom music bar shows the current track and keeps all three atmosphere buttons within reach, so you can change the music and mood without pausing. It stays anchored during screen shake.
+During phone play, the bright **Pause / Resume** button stays above the board. The music bar sits below the header, with all three atmosphere buttons available without pausing. The bottom control deck and music bar stay anchored during screen shake.
 
 ## Choose your pieces
 
@@ -28,7 +28,7 @@ Choose Fusion, then toggle any combination of the six size buttons. For example,
 
 Every shape can rotate. Mirror-distinct variants are separate bag entries, including all seven familiar four-square pieces. The [one-sided polyomino counts](https://oeis.org/A000988/list) give 89 playable shapes across the six sizes. The underlying free-shape generator still deduplicates reflection before the playable catalog adds the missing mirror variants.
 
-Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cleared lines increases the level. Chain line clears for combo bonuses. Fill your **Resonance** meter through placements and clears, then press Enter to dissolve the bottom four rows and give yourself breathing room.
+Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cleared lines increases the level. Chain line clears for combo bonuses. Fill your **Resonance** meter through placements and clears, then press Enter or tap its glowing **ACTIVATE** button to dissolve the bottom four rows and give yourself breathing room. Its charged pulse becomes a steady glow when either the game or operating system requests reduced motion.
 
 ## Feel every placement
 
@@ -54,7 +54,9 @@ Choose **Flow** for a gentle start or **Rush** for faster gravity. Every ten cle
 | Pause / resume          | P or Escape           |
 | Mute / fullscreen       | M / F                 |
 
-Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** is an opt-in setting that suppresses animated particles and shake; an explicitly saved choice is respected. The **FULL FX / CALM FX** button below the board toggles it directly.
+On touch screens, the bottom-left D-pad moves left/right, soft-drops while holding Down, and hard-drops once when pressing Up. Only one D-pad direction can be active at a time. The right side has equal counterclockwise/clockwise rotation buttons, with a wide **Hold** below them. Hold dims after use until the next piece; its preview dims too. Generous inactive gaps separate actions. Contacts stay on their original action even if your finger drifts; lift before changing direction. You can move or soft-drop while rotating with another finger. Mouse-only screens keep the keyboard controls without the touch deck.
+
+Mode, pace and Fusion selection are locked during a run. Pause and choose **Back to frequencies** to start a different journey. Audio begins on the first play gesture. Controls and settings are also explained in the in-game help panel. Full effects are on by default, independent of the operating system preference. **Reduced motion** in Settings suppresses animated particles and shake; an explicitly saved choice is respected. On desktop, the **FULL FX / CALM FX** button below the board toggles it directly.
 
 ## Your leaderboard
 

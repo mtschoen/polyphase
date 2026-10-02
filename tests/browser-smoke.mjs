@@ -82,6 +82,7 @@ try {
     await page.locator(`[data-mode="${mode}"]`).click();
     await page.getByRole('button', { name: 'Enter the flow' }).click();
     await page.waitForFunction(() => document.querySelector('#overlay').hidden);
+    await page.locator('#board').click();
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('c');
@@ -164,9 +165,11 @@ try {
   await page.screenshot({ path: 'artifacts/polyphase-mobile.png', fullPage: true });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
   await page.getByRole('button', { name: 'Enter the flow' }).click();
-  await page.locator('[data-action="right"]').click();
-  await page.locator('[data-action="drop"]').click();
-  checks.push('Mobile viewport has no horizontal overflow and touch controls are reachable');
+  assert.equal(await page.locator('.touch-controls').isVisible(), false);
+  await page.locator('#board').click();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Space');
+  checks.push('Narrow mouse-only desktop keeps keyboard input without showing touch controls');
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ checks, browserErrors: errors }, null, 2));
   await writeFile(

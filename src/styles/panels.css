@@ -111,8 +111,10 @@
   display: block;
   width: 100%;
   text-align: left;
-  background: transparent;
-  padding: 0;
+  background: #163a2d;
+  border: 1px solid #6f9c7b66;
+  border-radius: 9px;
+  padding: 12px;
   margin-top: 22px;
 }
 .resonance .panel-heading {
@@ -144,10 +146,34 @@
   color: #789c83;
 }
 .resonance.ready {
-  filter: drop-shadow(0 0 12px #78e6c222);
+  border-color: var(--accent);
+  background: #235943;
+  box-shadow: 0 0 18px #78e6c266;
+  animation: resonance-charge 1.4s ease-in-out infinite alternate;
 }
 .resonance.ready .charge-caption {
   color: var(--accent);
+}
+.resonance:disabled {
+  opacity: 0.6;
+}
+.hold-panel.unavailable > canvas {
+  opacity: 0.4;
+}
+@keyframes resonance-charge {
+  to {
+    box-shadow:
+      0 0 28px #78e6c299,
+      inset 0 0 12px #78e6c233;
+  }
+}
+.reduced-motion .resonance.ready {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .resonance.ready {
+    animation: none;
+  }
 }
 .site-footer {
   display: flex;
