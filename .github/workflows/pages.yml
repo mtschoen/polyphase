@@ -167,26 +167,7 @@ jobs:
           PREVIEW_PATH: ${{ needs.prepare.outputs.preview-path }}
           REMOVE_PREVIEW: ${{ needs.prepare.outputs.remove }}
         run: |
-          set -euo pipefail
-          mkdir site
-          if [ -d stored-site ]; then
-            rsync -a --exclude='.git' stored-site/ site/
-          fi
-          # Replace production while retaining every other preview.
-          rsync -a --delete --exclude='pr-preview' --exclude='branch-preview' incoming/site-production/ site/
-          if [ -n "$PREVIEW_PATH" ]; then
-            [[ "$PREVIEW_PATH" =~ ^(pr-preview/pr-[0-9]+|branch-preview/[a-zA-Z0-9-]+)$ ]]
-            if [ "$REMOVE_PREVIEW" = true ]; then
-              rm -rf -- "site/$PREVIEW_PATH"
-            else
-              mkdir -p "site/$PREVIEW_PATH"
-              rsync -a --delete incoming/site-preview/ "site/$PREVIEW_PATH/"
-            fi
-          fi
-          # A preview can never replace the root index or production revision marker.
-          cmp incoming/site-production/index.html site/index.html
-          cmp incoming/site-production/deployed-version.json site/deployed-version.json
-          touch site/.nojekyll
+          bash .github/scripts/assemble-pages.sh
       - name: Retain combined site for subsequent deployments
         uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4.9.0
         with:

@@ -23,6 +23,11 @@ branch preview with the workflow's `remove` checkbox and verify that production 
 other previews survive. PR closure removes that PR's preview. Keep environment
 protection restricted to `main`; never deploy a standalone preview artifact to Pages.
 
+On Linux or WSL with Python 3 and rsync, run `python3 tests/pages_assembly_test.py` to
+check the actual deployment assembly script. `Check Pages assembly` also runs these
+checks on pull requests, including equal-size/equal-timestamp updates, preview
+preservation, removal and first deployment.
+
 Mobile release checks also assert visible Pause/Resume labels, 44-pixel atmosphere targets, mood changes without pausing, no controls obscured by the music bar, and stable dock geometry while the game surface shakes. Inspect `mobile-play-*.png` and `release-*.png` after changes to this layout. Hardware-backed Chrome is the verified production browser; a software-only legacy Chromium headless shell may lose its WebGL context while initializing the production bundle.
 
 The media harness also measures final output after compression at 100% master volume. Paired offline renders compare unity output against the production boost for all six sizes and three themes, overlapping opening music with a six-line clear. They verify the 1.5x signal increase and peak headroom without evicting scheduled voices.
