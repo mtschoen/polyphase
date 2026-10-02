@@ -103,6 +103,29 @@ Development and verification commands are in [AGENTS.md](AGENTS.md). Test eviden
 
 Source lives at [mtschoen/polyphase](https://github.com/mtschoen/polyphase). Pushes to `main` run lint, formatting, unit coverage and the production build before GitHub Actions deploys to Pages. `npm run build:pages` sets the `/polyphase/` asset prefix; `npm run preview -- --base=/polyphase/` previews that build locally.
 
+### Preview a PR or branch online
+
+Same-repository PRs targeting `main` automatically publish at
+`https://mtschoen.github.io/polyphase/pr-preview/pr-N/` (replace `N` with the PR number).
+New commits update that URL; closing or merging the PR removes it. The preview uses
+the PR's exact head commit, so it does not require merging first. Fork PRs are skipped.
+
+For an existing PR or any branch, open
+[Actions > Publish Polyphase](https://github.com/mtschoen/polyphase/actions/workflows/pages.yml),
+choose **Run workflow**, leave **Use workflow from** set to **main**, and enter the PR
+number (such as `4`) or branch name in **preview**. The completed run's **deploy**
+summary contains the link. Branch previews use a stable name plus a hash under
+`branch-preview/`; rerun the form to refresh them, or select **remove** to delete one.
+An empty preview field republishes production while preserving existing previews.
+
+Production and previews share one Pages site. The workflow always builds production
+from `main`, preserves other previews on the generated `gh-pages` branch, and publishes
+one combined artifact. Keep Pages set to **GitHub Actions** and keep the `github-pages`
+environment restricted to `main`. A separate environment name does not isolate a Pages
+deployment. Preview code builds in read-only jobs without secrets, saved credentials
+or shared caches; the publishing jobs only handle static files. Browser settings and
+local scores share the site's origin, so previews can see the same local storage.
+
 Original artwork, synthesis, musical arrangement and game implementation. The melody is traditional; no game recording or modern game arrangement is reused. MIT license for this project. Three.js and bundled fonts retain their own licenses.
 
 ## How it was made

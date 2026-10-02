@@ -13,6 +13,7 @@ An original browser falling-block game with one-cell through six-cell polyominoe
 - `npm run preview`: serve the production build.
 - `node tests/browser-smoke.mjs`, `node tests/media-smoke.mjs` and `node tests/mobile-smoke.mjs`: real browser checks against a running dev server. See SMOKE.md for browser setup and TEST-REPORT.md for the latest evidence.
 - `node tests/release-smoke.mjs`: production-bundle checks against the Pages preview, or `POLYPHASE_URL` for the live site. `.github/workflows/pages.yml` verifies and publishes pushes to `main`.
+- Pages also hosts automatic same-repository PR previews and manual branch previews. Run the workflow from `main` with `preview` set to a PR number or branch; see README. Keep the main-only Pages environment protection and combined artifact: root must always be the `main` build. `gh-pages` stores generated production plus previews; it is not the Pages publishing source.
 
 ## Architecture
 

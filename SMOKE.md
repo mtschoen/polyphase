@@ -16,6 +16,20 @@ The mobile matrix also includes 1024x701 to catch sidebar/deck overlap between c
 
 The browser harnesses close their isolated browsers. Screenshots and runtime results are written under ignored `artifacts/`. Inspect desktop and mobile screenshots after layout changes. Perceived musical quality and game feel still benefit from human playtesting with headphones.
 
+Hosted previews: run `Publish Polyphase` from `main` with `preview=4` (or another PR
+number/branch). Check the completed deployment summary for its URL. Run the revision's
+`tests/release-smoke.mjs` with `POLYPHASE_URL` pointing to that URL, then check production
+separately. Compare each URL's `deployed-version.json` with the expected source commit.
+After another production deployment, confirm the preview still works; remove a manual
+branch preview with the workflow's `remove` checkbox and verify that production and
+other previews survive. PR closure removes that PR's preview. Keep environment
+protection restricted to `main`; never deploy a standalone preview artifact to Pages.
+
+On Linux or WSL with Python 3 and rsync, run `python3 tests/pages_assembly_test.py` to
+check the actual deployment assembly script. `Check Pages assembly` also runs these
+checks on pull requests, including equal-size/equal-timestamp updates, preview
+preservation, removal and first deployment.
+
 Mobile checks also assert visible Pause/Resume labels, 44-pixel atmosphere targets, mood changes without pausing, no controls obscured by the music bar, and stable music/deck geometry while the game surface shakes. Geometric fit checks use reduced motion to avoid sampling transient shake; anchoring checks apply an explicit transform. Inspect `mobile-play-*.png`, `mobile-over-*.png`, `mobile-resonance-game.png` and `release-*.png` after changes to this layout. Hardware-backed Chrome is the verified production browser; a software-only legacy Chromium headless shell may lose its WebGL context while initializing the production bundle.
 
 The media harness also measures final output after compression at 100% master volume. Paired offline renders compare unity output against the production boost for all six sizes and three themes, overlapping opening music with a six-line clear. They verify the 1.5x signal increase and peak headroom without evicting scheduled voices.
