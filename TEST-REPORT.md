@@ -1,14 +1,5 @@
 # Polyphase release verification
 
-## Hosted preview infrastructure (2026-10-01)
-
-Local checks passed: 212 tests, unchanged coverage, lint, formatting, TypeScript,
-nested-path build and workflow target resolution. Native Chrome release smoke passed
-at desktop 1440x1000 and mobile 390x844 with zero browser errors, using the main game
-at `/polyphase/pr-preview/pr-4/`. PR #4's hosted preview has not yet been verified.
-
-## Original release evidence
-
 | Field              | Result                                                                         |
 | ------------------ | ------------------------------------------------------------------------------ |
 | Date               | 2026-09-30                                                                     |
