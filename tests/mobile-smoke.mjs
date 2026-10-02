@@ -24,7 +24,7 @@ async function geometry(page, width, height, state) {
       deck: bounds('.touch-controls'),
       controls: [
         ...document.querySelectorAll(
-          '[data-action], #resonance, #pause, .header-actions button, [data-theme], .mobile-setup select, [data-fusion-size], [data-overlay-action]',
+          '[data-action], #resonance, #pause, #mobile-effects-mode, .header-actions button, [data-theme], .mobile-setup select, [data-fusion-size], [data-overlay-action]',
         ),
       ]
         .filter((element) => element.checkVisibility())
@@ -80,6 +80,7 @@ try {
     [844, 390, 'fusion'],
     [568, 320, 'pentris'],
     [1024, 768, 'fusion'],
+    [1024, 701, 'pentris'],
   ]) {
     const context = await browser.newContext({
       viewport: { width, height },
@@ -92,6 +93,12 @@ try {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(base);
     await page.getByRole('button', { name: 'Enter the flow' }).waitFor();
+    assert.equal(
+      await page.locator('#mobile-effects-mode').isVisible(),
+      true,
+      'mobile effects shortcut',
+    );
+    assert.equal(await page.locator('#fullscreen').isVisible(), true, 'mobile fullscreen access');
     assert.equal(await page.locator('.touch-controls').isVisible(), false);
     if (mode !== 'pentris') await page.locator('#mobile-mode').selectOption(mode);
     await geometry(page, width, height, 'setup');
@@ -103,6 +110,46 @@ try {
     await page.getByRole('button', { name: 'Enter the flow' }).tap();
     await page.waitForFunction(() => document.body.classList.contains('in-run'));
     const layout = await geometry(page, width, height, 'playing');
+    const information = await page.evaluate(() => {
+      const direction = document.querySelector('.direction-pad').getBoundingClientRect();
+      const actions = document.querySelector('.action-pad').getBoundingClientRect();
+      return {
+        gap: actions.left - direction.right,
+        best: document.querySelector('.best').checkVisibility(),
+        labelSize: parseFloat(
+          getComputedStyle(document.querySelector('.score-block .eyebrow')).fontSize,
+        ),
+        panelSize: parseFloat(
+          getComputedStyle(document.querySelector('.hold-panel .panel-heading')).fontSize,
+        ),
+      };
+    });
+    assert.ok(
+      information.gap >= (width >= 700 ? 48 : width >= 320 ? 24 : 20),
+      'inactive cross-pad margin',
+    );
+    assert.ok(information.best, 'personal best is visible');
+    assert.ok(
+      information.labelSize >= 10 && information.panelSize >= 11,
+      'readable sidebar labels',
+    );
+    if (height > 600) {
+      const sidebarBottom = await page
+        .locator('#resonance')
+        .evaluate((element) => element.getBoundingClientRect().bottom);
+      assert.ok(sidebarBottom <= layout.deck.top, 'sidebar stays above the controls');
+    }
+    await page.locator('#mobile-effects-mode').tap();
+    assert.equal(await page.locator('#mobile-effects-mode').textContent(), 'FULL FX');
+    assert.equal(await page.locator('#effects-mode').textContent(), 'FULL FX');
+    assert.equal(await page.locator('#reduced-motion').isChecked(), false);
+    assert.equal(
+      await page.locator('#overlay').isVisible(),
+      false,
+      'effects shortcut does not pause',
+    );
+    await page.locator('#mobile-effects-mode').tap();
+    assert.equal(await page.locator('#reduced-motion').isChecked(), true);
     const padFill = await page.locator('.direction-pad').evaluate((pad) => {
       const bounds = pad.getBoundingClientRect();
       return ['left', 'right'].every((action) => {

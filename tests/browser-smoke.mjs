@@ -84,7 +84,7 @@ try {
     await page.waitForFunction(() => document.querySelector('#overlay').hidden);
     await page.locator('#board').click();
     await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('KeyX');
     await page.keyboard.press('c');
     await page.keyboard.press('Space');
     await page.waitForFunction(() => Number(document.querySelector('#score').textContent) > 0);

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameEngine } from '../src/game/engine';
-import { updateControls } from '../src/interface';
+import { updateControls, updateEffectsControls } from '../src/interface';
 
 // Substitute only DOM storage; the real engine and UI projection determine every state.
 class ControlElement {
@@ -50,6 +50,25 @@ describe('control availability presentation', () => {
     });
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it('keeps desktop and mobile effects shortcuts synchronized with settings', () => {
+    const effectsButtons = [new ControlElement(), new ControlElement()];
+    vi.stubGlobal('document', {
+      querySelectorAll: (selector: string) => {
+        if (selector !== '[data-effects-mode]') throw new Error(`Unmodeled selector: ${selector}`);
+        return effectsButtons;
+      },
+    });
+    for (const reducedMotion of [true, false, true]) {
+      updateEffectsControls(reducedMotion);
+      for (const button of effectsButtons) {
+        expect(button.textContent).toBe(reducedMotion ? 'CALM FX' : 'FULL FX');
+        expect(button.attributes.get('aria-label')).toBe(
+          reducedMotion ? 'Enable full effects' : 'Use reduced effects',
+        );
+      }
+    }
+  });
 
   it('reenables Hold for the next piece even when the held preview has not changed', () => {
     const game = new GameEngine('monotris', 'flow', () => 0.37);

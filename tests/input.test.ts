@@ -60,9 +60,28 @@ describe('held keyboard and touch controls', () => {
       Object.assign(new Event(type, { cancelable: true }), { pointerId }),
     );
   }
-  function keyboard(type: string, code: string) {
-    windowSurface.dispatchEvent(Object.assign(new Event(type, { cancelable: true }), { code }));
+  function keyboard(type: string, code: string, repeat = false) {
+    windowSurface.dispatchEvent(
+      Object.assign(new Event(type, { cancelable: true }), { code, repeat }),
+    );
   }
+
+  it.each(['ArrowUp', 'KeyW', 'Space'])('hard drops once per press of %s', (code) => {
+    keyboard('keydown', code);
+    keyboard('keydown', code, true);
+    input.update(10);
+    expect(actions.drop).toHaveBeenCalledTimes(1);
+    expect(actions.rotate).not.toHaveBeenCalled();
+    keyboard('keyup', code);
+    keyboard('keydown', code);
+    expect(actions.drop).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['KeyX', 'KeyE'])('keeps clockwise rotation on %s', (code) => {
+    keyboard('keydown', code);
+    expect(actions.rotate).toHaveBeenCalledExactlyOnceWith(1);
+    expect(actions.drop).not.toHaveBeenCalled();
+  });
 
   it('keeps a direction held until the last finger releases it', () => {
     pointer('left', 'pointerdown', 1);

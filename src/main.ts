@@ -11,7 +11,13 @@ import {
 import { AudioEngine, soundtrackForSizes } from './audio';
 import { Universe } from './universe';
 import { BoardRenderer, drawPreview } from './renderer';
-import { createInterface, renderOverlay, setText, updateControls } from './interface';
+import {
+  createInterface,
+  renderOverlay,
+  setText,
+  updateControls,
+  updateEffectsControls,
+} from './interface';
 import { InputController } from './input';
 import { loadSettings, saveSettings, readBest, saveBest } from './storage';
 import { Announcer } from './announcer';
@@ -75,11 +81,7 @@ function applySettings(): void {
   element<HTMLInputElement>('#volume').value = String(Math.round(settings.volume * 100));
   element<HTMLInputElement>('#reduced-motion').checked = settings.reducedMotion;
   element<HTMLInputElement>('#announcer').checked = settings.announcer;
-  setText('#effects-mode', settings.reducedMotion ? 'CALM FX' : 'FULL FX');
-  element('#effects-mode').setAttribute(
-    'aria-label',
-    settings.reducedMotion ? 'Enable full effects' : 'Use reduced effects',
-  );
+  updateEffectsControls(settings.reducedMotion);
   element<HTMLInputElement>('#ghost').checked = settings.ghost;
   setText('#volume-value', `${Math.round(settings.volume * 100)}%`);
   updateTrack();
@@ -406,10 +408,12 @@ element('#reduced-motion').addEventListener('change', () => {
   applySettings();
   persistSettings();
 });
-element('#effects-mode').addEventListener('click', () => {
-  settings.reducedMotion = !settings.reducedMotion;
-  applySettings();
-  persistSettings();
+document.querySelectorAll('[data-effects-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    settings.reducedMotion = !settings.reducedMotion;
+    applySettings();
+    persistSettings();
+  });
 });
 element('#announcer').addEventListener('change', () => {
   settings.announcer = element<HTMLInputElement>('#announcer').checked;
