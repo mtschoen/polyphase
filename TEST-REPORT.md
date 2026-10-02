@@ -4,7 +4,7 @@
 
 | Field                    | Value                                                                                                |
 | ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Git                      | `fix/mobile-input`, `4cf2088` plus mobile readability/spacing and keyboard drop changes              |
+| Git                      | `fix/mobile-input`, `20686c2` (verified feature commit)                                              |
 | Status                   | PASS                                                                                                 |
 | Mode                     | Best effort; inherited incomplete unit coverage                                                      |
 | Tests                    | 233 passed across 14 files; zero failures or skips                                                   |
