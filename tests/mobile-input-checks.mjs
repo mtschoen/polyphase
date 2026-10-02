@@ -94,6 +94,8 @@ export async function checkNativeControls(context, base, errors) {
   const original = await snapshot();
   await send('touchStart', [left]);
   assert.equal((await snapshot()).x, original.x - 1);
+  await page.evaluate(() => window.touchProbe.input.update(0.28));
+  assert.equal((await snapshot()).x, original.x - 1, 'A short touch must move only one cell');
   await send('touchMove', [{ ...down, id: left.id }]);
   assert.equal((await snapshot()).softDrop, false, 'Captured thumb drift must not select down');
   await send('touchStart', [{ ...down, id: left.id }, down]);
@@ -143,7 +145,7 @@ export async function checkNativeControls(context, base, errors) {
   assert.equal((await snapshot()).softDrop, false);
   await send('touchStart', [left]);
   const beforeRepeat = (await snapshot()).x;
-  await page.evaluate(() => window.touchProbe.input.update(0.2));
+  await page.evaluate(() => window.touchProbe.input.update(0.4));
   assert.ok((await snapshot()).x < beforeRepeat);
   await page.evaluate(() => window.dispatchEvent(new Event('blur')));
   const afterBlur = (await snapshot()).x;

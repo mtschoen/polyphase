@@ -103,6 +103,27 @@ try {
     await page.getByRole('button', { name: 'Enter the flow' }).tap();
     await page.waitForFunction(() => document.body.classList.contains('in-run'));
     const layout = await geometry(page, width, height, 'playing');
+    const padFill = await page.locator('.direction-pad').evaluate((pad) => {
+      const bounds = pad.getBoundingClientRect();
+      return ['left', 'right'].every((action) => {
+        const button = pad.querySelector(`[data-action="${action}"]`).getBoundingClientRect();
+        return (
+          Math.abs(button.top - bounds.top) < 0.1 && Math.abs(button.bottom - bounds.bottom) < 0.1
+        );
+      });
+    });
+    assert.ok(padFill, `${width}x${height}: side directions must fill the pad height`);
+    for (const action of ['counter', 'rotate']) {
+      const centered = await page.locator(`[data-action="${action}"]`).evaluate((button) => {
+        const target = button.getBoundingClientRect();
+        const artwork = button.querySelector('svg').getBoundingClientRect();
+        return (
+          Math.abs(target.x + target.width / 2 - artwork.x - artwork.width / 2) < 0.1 &&
+          Math.abs(target.y + target.height / 2 - artwork.y - artwork.height / 2) < 0.1
+        );
+      });
+      assert.ok(centered, `${width}x${height}: ${action} icon must be centered`);
+    }
     for (const [theme, label] of [
       ['Afterglow', 'AFTERGLOW'],
       ['Deep Blue', 'DEEP BLUE'],

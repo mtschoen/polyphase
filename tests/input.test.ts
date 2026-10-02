@@ -69,7 +69,7 @@ describe('held keyboard and touch controls', () => {
     pointer('left', 'pointerdown', 2);
     pointer('left', 'pointerup', 1);
     vi.mocked(actions.move).mockClear();
-    input.update(0.2);
+    input.update(0.4);
     expect(actions.move).toHaveBeenCalledWith(-1);
     pointer('left', 'pointerup', 2);
     vi.mocked(actions.move).mockClear();
@@ -105,9 +105,50 @@ describe('held keyboard and touch controls', () => {
     pointer('rotate', 'pointerdown', 2);
     pointer('rotate', 'pointerup', 2);
     vi.mocked(actions.move).mockClear();
-    input.update(0.2);
+    input.update(0.4);
     expect(actions.rotate).toHaveBeenCalledWith(1);
     expect(actions.move).toHaveBeenCalledWith(-1);
+  });
+
+  it('moves one cell per short touch and gives every new contact a fresh delay', () => {
+    pointer('right', 'pointerdown', 1);
+    input.update(0.28);
+    expect(actions.move).toHaveBeenCalledExactlyOnceWith(1);
+    pointer('right', 'pointerup', 1);
+    input.update(1);
+    pointer('right', 'pointerdown', 2);
+    input.update(0.28);
+    pointer('right', 'pointerup', 2);
+    input.update(1);
+    expect(actions.move).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits for a deliberate touch hold and repeats without catch-up bursts', () => {
+    pointer('left', 'pointerdown', 1);
+    input.update(0.31);
+    expect(actions.move).toHaveBeenCalledTimes(1);
+    input.update(0.02);
+    expect(actions.move).toHaveBeenCalledTimes(2);
+    input.update(0.05);
+    expect(actions.move).toHaveBeenCalledTimes(2);
+    input.update(0.07);
+    expect(actions.move).toHaveBeenCalledTimes(3);
+    input.update(1);
+    expect(actions.move).toHaveBeenCalledTimes(4);
+    pointer('left', 'pointercancel', 1);
+    input.update(1);
+    expect(actions.move).toHaveBeenCalledTimes(4);
+  });
+
+  it('preserves the faster keyboard repeat', () => {
+    keyboard('keydown', 'ArrowRight');
+    input.update(0.17);
+    expect(actions.move).toHaveBeenCalledTimes(2);
+    input.update(0.06);
+    expect(actions.move).toHaveBeenCalledTimes(3);
+    keyboard('keyup', 'ArrowRight');
+    input.update(1);
+    expect(actions.move).toHaveBeenCalledTimes(3);
   });
 
   it('clears held input on blur and removes listeners on disposal', () => {

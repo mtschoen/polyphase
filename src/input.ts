@@ -153,7 +153,7 @@ export class InputController {
       const direction = action === 'left' ? -1 : 1;
       this.held.set(action, direction);
       this.horizontal = direction;
-      this.repeatTime = 0.16;
+      this.repeatTime = this.isTouchMovement() ? 0.32 : 0.16;
       this.actions.move(direction);
     } else if (action === 'down') this.actions.softDrop(true);
     else if (action === 'rotate' || action === 'counter')
@@ -167,7 +167,7 @@ export class InputController {
     if (action === 'left' || action === 'right') {
       this.held.delete(action);
       this.horizontal = [...this.held.values()].at(-1) || 0;
-      this.repeatTime = 0.1;
+      this.repeatTime = this.isTouchMovement() ? 0.32 : 0.1;
     }
   }
   clear = (): void => {
@@ -181,10 +181,24 @@ export class InputController {
   update(delta: number): void {
     if (!this.actions.isPlaying() || !this.horizontal) return;
     this.repeatTime -= delta;
+    if (this.isTouchMovement()) {
+      if (this.repeatTime <= 0) {
+        this.actions.move(this.horizontal);
+        // A delayed frame must not turn a held thumb into a burst of moves.
+        this.repeatTime = 0.11;
+      }
+      return;
+    }
     while (this.repeatTime <= 0) {
       this.actions.move(this.horizontal);
       this.repeatTime += 0.055;
     }
+  }
+  private isTouchMovement(): boolean {
+    const action = this.horizontal < 0 ? 'left' : 'right';
+    return (
+      [...this.pointers.values()].includes(action) && ![...this.keys.values()].includes(action)
+    );
   }
   dispose(): void {
     this.clear();

@@ -21,7 +21,7 @@
   .direction-pad {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
   .action-pad {
@@ -70,19 +70,25 @@
   }
   .touch-controls [data-action='left'] {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1 / -1;
   }
   .touch-controls [data-action='right'] {
     grid-column: 3;
-    grid-row: 2;
+    grid-row: 1 / -1;
   }
   .touch-controls [data-action='down'] {
     grid-column: 2;
-    grid-row: 3;
+    grid-row: 2;
   }
-  .touch-controls [data-action='counter'],
-  .touch-controls [data-action='rotate'] {
-    font-size: 32px;
+  .touch-controls button svg {
+    display: block;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    stroke-width: 2;
+  }
+  .touch-controls [data-action='counter'] svg {
+    transform: scaleX(-1);
   }
   .touch-controls [data-action='hold'] {
     grid-column: 1 / -1;

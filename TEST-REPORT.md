@@ -1,23 +1,23 @@
 # Verification report
 
-| Field              | Value                                                                                |
-| ------------------ | ------------------------------------------------------------------------------------ |
-| Date               | 2026-10-01                                                                           |
-| Git reference      | `fix/mobile-input`, responsive control sizing after `d8be42f`, with this report      |
-| Status             | PASS: unit suite, lint, formatting, Pages build and native browser checks            |
-| Mode               | Best effort; full-source line coverage 58.55%, baseline 57.89%                       |
-| Unit tests         | 224 passed across 14 files; zero failures or skips                                   |
-| Browser errors     | Zero in successful gameplay, media, mobile and production-bundle checks              |
-| Independent review | Mobile layout and input reviewed; reported findings resolved and rechecked in Chrome |
+| Field              | Value                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| Date               | 2026-10-01                                                                            |
+| Git reference      | `fix/mobile-input`, control height and touch timing after `485e3c5`, with this report |
+| Status             | PASS: unit suite, lint, formatting, Pages build and native browser checks             |
+| Mode               | Best effort; full-source line coverage 58.69%, baseline 58.55%                        |
+| Unit tests         | 227 passed across 14 files; zero failures or skips                                    |
+| Browser errors     | Zero in successful gameplay, media, mobile and production-bundle checks               |
+| Independent review | Mobile layout and input reviewed; reported findings resolved and rechecked in Chrome  |
 
 ## Coverage
 
 | Scope                 | Statements         | Branches          | Functions        | Lines              |
 | --------------------- | ------------------ | ----------------- | ---------------- | ------------------ |
-| All production source | 57.85% (1308/2261) | 63.18% (714/1130) | 58.17% (217/373) | 58.55% (1194/2039) |
-| Previous baseline     | 57.05%             | 61.08%            | 57.73%           | 57.89%             |
+| All production source | 57.98% (1315/2268) | 63.48% (725/1142) | 58.28% (218/374) | 58.69% (1201/2046) |
+| Previous baseline     | 57.85%             | 63.18%            | 58.17%           | 58.55%             |
 | Game rules and shapes | 100%               | 99.35%            | 100%             | 100%               |
-| Input                 | 85.93%             | 80%               | 100%             | 88.49%             |
+| Input                 | 86.66%             | 81.37%            | 100%             | 89.16%             |
 | Interface             | 25.86%             | 28.57%            | 21.42%           | 25.45%             |
 | Effects               | 96.68%             | 89.92%            | 95.23%           | 96.90%             |
 | Audio engine          | 89.05%             | 81.42%            | 87.50%           | 93.69%             |
@@ -26,7 +26,7 @@ Unit tests cover control availability, Hold reset with an unchanged held preview
 
 ## Runtime checks
 
-The control-sizing follow-up reran all 11 mobile cases, the 224-test coverage suite, lint, formatting, the Pages build and Aislop. Broader gameplay and audio evidence below comes from `d8be42f`; this follow-up changes CSS only. Buttons now fill their allocated deck areas without moving or shrinking the board. Measured targets at 390x844: D-pad about 65x48, rotations 66x75 and Hold 143x75 CSS pixels. At 768x896: D-pad 136x61, rotations 136x95 and Hold 285x95. Landscape controls also use the available side height.
+This follow-up reran all 11 mobile cases, the 227-test coverage suite, lint, formatting, the Pages build, Aislop and the broad gameplay browser check. Audio evidence below comes from `d8be42f`; audio code is unchanged. Left/Right now span the full D-pad height while Up/Down split the middle column, with inactive gaps retained. Rotation SVGs are centered in their buttons at every tested size. Deterministic and native input checks verify one cell for a 280 ms touch, a 320 ms initial repeat delay, 110 ms repeats, no catch-up bursts after delayed frames, release/reset behavior and unchanged keyboard timing.
 
 | Check                         | Result                                                                                                                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

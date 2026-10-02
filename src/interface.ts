@@ -12,6 +12,7 @@ const icons = {
   trophy:
     '<path d="M8 3h8v6a4 4 0 0 1-8 0V3Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 1v6m-4 2h8"/>',
   arrow: '<path d="M5 12h14m-5-5 5 5-5 5"/>',
+  rotate: '<path d="M21 7v5h-5M21 12a9 9 0 1 0-2.64 6.36"/>',
 };
 export function icon(name: keyof typeof icons): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
@@ -68,8 +69,8 @@ export function createInterface(): void {
         <button data-action="down" data-pad="direction" aria-label="Soft drop" disabled><span aria-hidden="true">↓</span><small>SOFT</small></button>
       </div>
       <div class="action-pad" role="group" aria-label="Rotation and hold">
-        <button data-action="counter" aria-label="Rotate counterclockwise" disabled>↶</button>
-        <button data-action="rotate" aria-label="Rotate clockwise" disabled>↷</button>
+        <button data-action="counter" aria-label="Rotate counterclockwise" disabled>${icon('rotate')}</button>
+        <button data-action="rotate" aria-label="Rotate clockwise" disabled>${icon('rotate')}</button>
         <button data-action="hold" aria-label="Hold piece" disabled><span>HOLD</span><small id="touch-hold-caption">NEXT PIECE</small></button>
       </div>
     </div>
